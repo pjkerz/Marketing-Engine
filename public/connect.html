@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+  <meta name="google-site-verification" content="u_97M9Nks9CZYWC6AREy3sSwmL1AiR3B62WWBEse-lA" />
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AlphaBoost — Affiliate Setup</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&family=DM+Mono&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#020617;color:#F1F5F9;font-family:'DM Sans',sans-serif;min-height:100vh}
+:focus-visible{outline:2px solid #00C8FF;outline-offset:2px;border-radius:4px}
+
+/* Header */
+.header{background:#111827;border-bottom:1px solid #1E2D42;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.brand{font-family:'Syne',sans-serif;font-weight:800;font-size:18px}.brand span{color:#00C8FF}
+.step-label{font-size:12px;color:#94A3B8;font-family:'DM Mono',monospace}
+
+/* Progress */
+.progress-wrap{padding:20px 24px 0;max-width:780px;margin:0 auto}
+.progress-track{display:flex;align-items:center;gap:0;margin-bottom:32px}
+.step-bubble{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;flex-shrink:0;transition:all .3s}
+.step-bubble.done{background:#22C55E;color:#020617}
+.step-bubble.active{background:#00C8FF;color:#020617;box-shadow:0 0 16px rgba(0,200,255,0.4)}
+.step-bubble.pending{background:#1E2D42;color:#94A3B8}
+.step-line{flex:1;height:2px;background:#1E2D42;transition:background .3s}
+.step-line.done{background:#22C55E}
+.step-names{display:flex;justify-content:space-between;margin-top:8px}
+.step-name{font-size:11px;font-family:'DM Mono',monospace;color:#94A3B8;text-align:center;width:32px}
+.step-name.active{color:#00C8FF}
+.step-name.done{color:#22C55E}
+
+/* Main */
+.main{max-width:780px;margin:0 auto;padding:0 24px 60px}
+.card{background:#111827;border:1px solid #1E2D42;border-radius:16px;padding:32px;margin-bottom:20px}
+.card-title{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:6px}
+.card-sub{font-size:14px;color:#94A3B8;margin-bottom:24px;line-height:1.6}
+
+/* Form fields */
+.field{margin-bottom:20px}
+.field label{display:block;font-size:13px;font-family:'DM Mono',monospace;color:#94A3B8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.field input,.field select,.field textarea{width:100%;background:#020617;border:1px solid #1E2D42;border-radius:8px;padding:12px 14px;color:#F1F5F9;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#00C8FF}
+.field input:focus-visible,.field select:focus-visible,.field textarea:focus-visible{outline:2px solid #00C8FF;outline-offset:1px}
+.field textarea{resize:vertical;min-height:80px;line-height:1.5}
+.field select option{background:#111827}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:540px){.field-row{grid-template-columns:1fr}}
+
+/* Slider */
+.slider-wrap{display:flex;align-items:center;gap:12px}
+.slider-wrap input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(255,255,255,0.1);outline:none;cursor:pointer}
+.slider-wrap input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#00C8FF;cursor:pointer}
+.slider-wrap input[type=range]:focus-visible{outline:2px solid #00C8FF;outline-offset:4px;border-radius:4px}
+.slider-val{font-family:'DM Mono',monospace;font-size:14px;color:#00C8FF;min-width:32px;text-align:right}
+
+/* Tags */
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.tag{padding:6px 14px;border-radius:20px;border:1px solid #1E2D42;font-size:13px;cursor:pointer;transition:all .2s;background:#020617;color:#F1F5F9}
+.tag.selected{border-color:#00C8FF;color:#00C8FF;background:rgba(0,200,255,0.08)}
+.tag:focus-visible,.ch-tab:focus-visible{outline:2px solid #00C8FF;outline-offset:2px}
+.tag-input-wrap{display:flex;gap:8px;margin-bottom:8px}
+.tag-input-wrap input{flex:1;background:#020617;border:1px solid #1E2D42;border-radius:8px;padding:10px 14px;color:#F1F5F9;font-size:14px;font-family:'DM Sans',sans-serif;outline:none}
+.tag-input-wrap input:focus{border-color:#00C8FF}
+.tag-input-wrap input:focus-visible{outline:2px solid #00C8FF;outline-offset:1px}
+.tag-input-wrap button{padding:10px 16px;background:#1E2D42;border:none;border-radius:8px;color:#F1F5F9;cursor:pointer;font-size:13px}
+.tag-input-wrap button:hover{background:#334155}
+
+/* Upload zone */
+.upload-zone{border:2px dashed #1E2D42;border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:all .3s}
+.upload-zone:hover,.upload-zone.drag{border-color:#00C8FF;background:rgba(0,200,255,0.04)}
+.upload-zone.uploaded{border-color:#22C55E;background:rgba(34,197,94,0.04)}
+.upload-zone:focus-visible{outline:2px solid #00C8FF;outline-offset:3px}
+.upload-icon{font-size:40px;margin-bottom:12px}
+.upload-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px}
+.upload-sub{font-size:13px;color:#94A3B8}
+
+/* Consent */
+.consent-box{background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.2);border-radius:10px;padding:16px 18px;font-size:13px;color:#94A3B8;line-height:1.6;margin-bottom:20px}
+.consent-box strong{color:#F1F5F9}
+
+/* Buttons */
+.btn{padding:14px 28px;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;border:none;transition:all .2s}
+.btn-primary{background:#00C8FF;color:#020617}
+.btn-primary:hover{background:#38d9ff}
+.btn-primary:disabled{background:#1E2D42;color:#94A3B8;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1px solid #1E2D42;color:#94A3B8}
+.btn-ghost:hover{border-color:#94A3B8;color:#F1F5F9}
+.btn-green{background:#22C55E;color:#020617}
+.btn-green:hover{background:#4ade80}
+.btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:28px;gap:12px}
+
+/* Status */
+.status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace}
+.status-pill.processing{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24}
+.status-pill.done{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#22C55E}
+.status-pill.error{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:#f87171}
+.pulse{width:8px;height:8px;border-radius:50%;background:currentColor;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* Content preview */
+.channel-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.ch-tab{padding:6px 14px;border-radius:20px;border:1px solid #1E2D42;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .2s;color:#94A3B8}
+.ch-tab.active{border-color:#00C8FF;color:#00C8FF;background:rgba(0,200,255,0.08)}
+.content-box{background:#020617;border:1px solid #1E2D42;border-radius:10px;padding:20px;font-size:14px;line-height:1.7;color:#E2E8F0;min-height:120px;white-space:pre-wrap;position:relative}
+.content-actions{display:flex;gap:8px;margin-top:12px}
+.content-actions button{padding:8px 16px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid #1E2D42;background:transparent;color:#94A3B8;transition:all .2s}
+.content-actions button:hover{border-color:#00C8FF;color:#00C8FF}
+.content-actions button.dispatch{background:#22C55E;border-color:#22C55E;color:#020617;font-weight:600}
+.content-actions button.dispatch:hover{background:#4ade80}
+
+/* Success */
+.success-hero{text-align:center;padding:48px 24px}
+.success-icon{font-size:64px;margin-bottom:16px}
+.success-title{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;margin-bottom:12px}
+.success-sub{font-size:16px;color:#94A3B8;line-height:1.6;max-width:480px;margin:0 auto}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;background:#1E2D42;border:1px solid #334155;border-radius:10px;padding:14px 18px;font-size:14px;z-index:9999;display:none;max-width:320px}
+.toast.show{display:block}
+.toast.ok{border-color:#22C55E;color:#22C55E}
+.toast.err{border-color:#f87171;color:#f87171}
+
+.loading-dots::after{content:'.';animation:dots 1.2s steps(3,end) infinite}
+@keyframes dots{0%{content:'.'}33%{content:'..'}66%{content:'...'}}
+
+/* Skip link */
+.skip-link{position:absolute;top:-40px;left:0;background:#00C8FF;color:#020617;padding:8px 16px;font-weight:700;z-index:9999;border-radius:0 0 8px 0;text-decoration:none;font-size:14px}
+.skip-link:focus{top:0}
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Skip to main content</a>
+
+<header class="header">
+  <div class="brand" aria-label="AlphaBoost">Alpha<span>Boost</span></div>
+  <div class="step-label" id="headerStepLabel" aria-live="polite" aria-atomic="true">Affiliate Setup</div>
+</header>
+
+<div class="progress-wrap">
+  <div class="progress-track" id="progressTrack" role="list" aria-label="Setup progress"></div>
+</div>
+
+<main class="main" id="main" role="main"></main>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+const STEPS = ['Resume','Profile','Channels','Content','Done'];
+const CHANNELS = ['linkedin','twitter','facebook','instagram','reddit','discord','telegram','slack','youtube'];
+
+// Read token from URL
+const token = new URLSearchParams(location.search).get('token') || '';
+const affiliateCode = (() => {
+  try { return JSON.parse(atob(token.split('.')[1])).affiliateCode || ''; } catch { return ''; }
+})();
+
+const API = '/v2/api/affiliate/' + affiliateCode;
+
+let state = {
+  step: 0,
+  resumeJobId: null,
+  resumeStatus: null,
+  profile: {
+    role: '', seniority: '', industries: [], skills: [],
+    authoritySignal: '', painPoint: '',
+    directness: 0.6, provocation: 0.3, humor: 0.2,
+    ctaStrength: 'soft', desiredEmotion: 'curiosity',
+    goal: 'signups', format: 'framework', voice: 'operator',
+    controversy: 'balanced', platforms: ['linkedin'],
+    confidence: 0.5
+  },
+  channels: ['linkedin'],
+  contentRuns: [],
+  activeChannel: 'linkedin',
+  generatingContent: false,
+  skillInput: '',
+  industryInput: '',
+};
+
+// ── Utilities ───────────────────────────────────────────────────────────────
+
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast', 3500);
+}
+
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(path, {
+    ...opts,
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data?.error?.message || 'Request failed');
+  return data;
+}
+
+function idempotencyKey() {
+  return 'idem-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+}
+
+// ── Progress bar ─────────────────────────────────────────────────────────────
+
+function renderProgress() {
+  const track = document.getElementById('progressTrack');
+  let html = '';
+  STEPS.forEach((name, i) => {
+    const cls = i < state.step ? 'done' : i === state.step ? 'active' : 'pending';
+    const label = i < state.step ? `${name} — completed` : i === state.step ? `${name} — current step` : `${name} — upcoming`;
+    if (i > 0) html += `<div class="step-line ${i <= state.step ? 'done' : ''}" role="presentation"></div>`;
+    html += `<div class="step-bubble ${cls}" role="listitem" aria-label="${label}">${i < state.step ? '✓' : i + 1}</div>`;
+  });
+  track.innerHTML = html;
+
+  // Step names row
+  let namesHtml = '<div class="step-names">';
+  STEPS.forEach((name, i) => {
+    const cls = i < state.step ? 'done' : i === state.step ? 'active' : '';
+    namesHtml += `<div style="flex:1;text-align:${i===0?'left':i===STEPS.length-1?'right':'center'};font-size:11px;font-family:'DM Mono',monospace;color:${i===state.step?'#00C8FF':i<state.step?'#22C55E':'#64748B'}">${name}</div>`;
+  });
+  namesHtml += '</div>';
+  track.insertAdjacentHTML('afterend', namesHtml.replace(/<div class="step-names">.*<\/div>/, namesHtml));
+
+  document.getElementById('headerStepLabel').textContent = `Step ${state.step + 1} of ${STEPS.length} — ${STEPS[state.step]}`;
+}
+
+// ── Render router ─────────────────────────────────────────────────────────────
+
+function render() {
+  renderProgress();
+  const main = document.getElementById('main');
+  switch (state.step) {
+    case 0: main.innerHTML = renderResume(); bindResume(); break;
+    case 1: main.innerHTML = renderProfile(); bindProfile(); break;
+    case 2: main.innerHTML = renderChannels(); bindChannels(); break;
+    case 3: main.innerHTML = renderContent(); bindContent(); break;
+    case 4: main.innerHTML = renderDone(); break;
+  }
+}
+
+// ── Step 0: Resume ────────────────────────────────────────────────────────────
+
+function renderResume() {
+  const uploaded = state.resumeStatus === 'done';
+  const processing = state.resumeStatus === 'processing' || state.resumeStatus === 'queued';
+  return `
+  <div class="card">
+    <div class="card-title">Upload Your Resume</div>
+    <div class="card-sub">We'll use your resume to personalise your AlphaBoost content — so your posts sound like you, not a template.</div>
+
+    <div class="consent-box">
+      <strong>Privacy notice:</strong> By uploading your resume, you consent to Alphaboost storing and processing it solely to build your personalised affiliate profile. You may review, edit, or delete this data at any time.
+    </div>
+
+    <div class="upload-zone ${uploaded ? 'uploaded' : ''}" id="uploadZone" role="button" tabindex="0" aria-label="Upload resume — click or press Enter to browse files" onclick="document.getElementById('fileInput').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('fileInput').click()}" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
+      <input type="file" id="fileInput" accept=".pdf,.docx" style="display:none" aria-label="Resume file — PDF or DOCX" onchange="handleFile(this.files[0])">
+      <div class="upload-icon">${uploaded ? '✅' : '📄'}</div>
+      <div class="upload-title">${uploaded ? 'Resume uploaded!' : 'Drop your resume here'}</div>
+      <div class="upload-sub">${uploaded ? state.resumeFileName : 'PDF or DOCX · Max 10 MB · Click or drag to upload'}</div>
+    </div>
+
+    ${processing ? `<div style="margin-top:16px;text-align:center"><span class="status-pill processing"><span class="pulse"></span> Analysing your resume<span class="loading-dots"></span></span></div>` : ''}
+    ${uploaded ? `<div style="margin-top:16px;text-align:center"><span class="status-pill done">✓ Profile extracted from resume</span></div>` : ''}
+
+    <div class="btn-row">
+      <div></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" onclick="skipResume()">Skip — fill manually</button>
+        <button class="btn btn-primary" id="resumeNextBtn" ${!uploaded ? 'disabled' : ''} onclick="goStep(1)">Continue →</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function bindResume() {}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['pdf','docx'].includes(ext)) { toast('Only PDF or DOCX files accepted', 'err'); return; }
+  if (file.size > 10 * 1024 * 1024) { toast('File must be under 10 MB', 'err'); return; }
+
+  state.resumeFileName = file.name;
+  const zone = document.getElementById('uploadZone');
+  zone.innerHTML = `<div class="upload-icon">⏳</div><div class="upload-title">Uploading<span class="loading-dots"></span></div><div class="upload-sub">${file.name}</div>`;
+
+  const formData = new FormData();
+  formData.append('resume', file);
+
+  try {
+    const res = await fetch(API + '/upload-resume', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'X-Idempotency-Key': idempotencyKey() },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || 'Upload failed');
+
+    state.resumeJobId = data.jobId;
+    state.resumeStatus = 'queued';
+    render();
+    pollResumeStatus();
+  } catch (err) {
+    toast(err.message, 'err');
+    render();
+  }
+}
+
+async function pollResumeStatus() {
+  if (!state.resumeJobId) return;
+  try {
+    const data = await apiFetch(API + '/upload-status/' + state.resumeJobId);
+    state.resumeStatus = data.status;
+    if (data.status === 'done') {
+      // Fetch autofill suggestions
+      try {
+        const fill = await apiFetch(API + '/profile/autofill', { method: 'POST' });
+        if (fill.autofilled && fill.suggested) {
+          const s = fill.suggested;
+          state.profile = {
+            ...state.profile,
+            role: s.role || '',
+            seniority: s.seniority || '',
+            industries: s.industries || [],
+            skills: s.skills || [],
+            authoritySignal: s.authoritySignal || '',
+            painPoint: s.painPoint || '',
+            directness: s.directness ?? 0.6,
+            provocation: s.provocation ?? 0.3,
+          };
+        }
+      } catch {}
+      render();
+    } else if (data.status === 'failed') {
+      state.resumeStatus = 'failed';
+      toast('Resume analysis failed — you can fill in your profile manually', 'err');
+      render();
+    } else {
+      setTimeout(pollResumeStatus, 3000);
+    }
+  } catch {
+    setTimeout(pollResumeStatus, 5000);
+  }
+}
+
+function skipResume() {
+  state.resumeStatus = null;
+  goStep(1);
+}
+
+// ── Step 1: Profile ───────────────────────────────────────────────────────────
+
+function renderProfile() {
+  const p = state.profile;
+  const seniorityOpts = ['','Junior','Mid-level','Senior','Lead','Principal','Director','VP','C-Suite'].map(o =>
+    `<option value="${o}" ${p.seniority===o?'selected':''}>${o||'Select...'}</option>`).join('');
+  const ctaOpts = ['invisible','soft','direct','strong'].map(o =>
+    `<option value="${o}" ${p.ctaStrength===o?'selected':''}>${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join('');
+  const emotionOpts = ['curiosity','inspiration','urgency','trust','fomo'].map(o =>
+    `<option value="${o}" ${p.desiredEmotion===o?'selected':''}>${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join('');
+
+  return `
+  <div class="card">
+    <div class="card-title">Your Professional Profile</div>
+    <div class="card-sub">${state.resumeStatus==='done' ? '✨ Pre-filled from your resume — review and adjust anything.' : 'Tell us about yourself so your content sounds authentic.'}</div>
+
+    <div class="field-row">
+      <div class="field">
+        <label for="pRole">Job Title / Role</label>
+        <input type="text" id="pRole" value="${p.role}" placeholder="e.g. Product Manager" oninput="state.profile.role=this.value">
+      </div>
+      <div class="field">
+        <label for="pSeniority">Seniority Level</label>
+        <select id="pSeniority" onchange="state.profile.seniority=this.value">${seniorityOpts}</select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="industryInput">Industries (add up to 5)</label>
+      <div class="tag-input-wrap">
+        <input type="text" id="industryInput" placeholder="e.g. SaaS, FinTech..." aria-label="Enter an industry and press Enter or Add" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag('industries','industryInput')}">
+        <button onclick="addTag('industries','industryInput')" aria-label="Add industry">+ Add</button>
+      </div>
+      <div class="tags" id="industriesTags" role="group" aria-label="Selected industries">${renderTags(p.industries,'industries')}</div>
+    </div>
+
+    <div class="field">
+      <label for="skillInput">Key Skills (add up to 10)</label>
+      <div class="tag-input-wrap">
+        <input type="text" id="skillInput" placeholder="e.g. Go-to-market, AI strategy..." aria-label="Enter a skill and press Enter or Add" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag('skills','skillInput')}">
+        <button onclick="addTag('skills','skillInput')" aria-label="Add skill">+ Add</button>
+      </div>
+      <div class="tags" id="skillsTags" role="group" aria-label="Selected skills">${renderTags(p.skills,'skills')}</div>
+    </div>
+
+    <div class="field">
+      <label for="pAuthority">Authority Signal <span style="color:#94A3B8;font-weight:400;text-transform:none">(What gives you credibility?)</span></label>
+      <input type="text" id="pAuthority" value="${p.authoritySignal}" placeholder="e.g. 10 years in enterprise SaaS, built 3 products..." oninput="state.profile.authoritySignal=this.value">
+    </div>
+
+    <div class="field">
+      <label for="pPain">Biggest Pain Point You Help With</label>
+      <input type="text" id="pPain" value="${p.painPoint}" placeholder="e.g. landing a senior role without a recruiter..." oninput="state.profile.painPoint=this.value">
+    </div>
+
+    <div style="border-top:1px solid #1E2D42;margin:24px 0;padding-top:24px">
+      <div style="font-family:'DM Mono',monospace;font-size:12px;color:#94A3B8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:20px">Content Tone Settings</div>
+
+      <div class="field">
+        <label>Directness <span style="color:#94A3B8;font-weight:400;text-transform:none;font-size:11px">(how straight-talking your content is)</span></label>
+        <div class="slider-wrap">
+          <span style="font-size:12px;color:#94A3B8">Gentle</span>
+          <input type="range" min="0" max="1" step="0.05" value="${p.directness}" aria-label="Directness: from Gentle to Bold" aria-valuetext="${Math.round(p.directness*100)}%" oninput="state.profile.directness=parseFloat(this.value);document.getElementById('directnessVal').textContent=Math.round(this.value*100)+'%';this.setAttribute('aria-valuetext',Math.round(this.value*100)+'%')">
+          <span class="slider-val" id="directnessVal">${Math.round(p.directness*100)}%</span>
+          <span style="font-size:12px;color:#94A3B8">Bold</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Provocation <span style="color:#94A3B8;font-weight:400;text-transform:none;font-size:11px">(how much you challenge conventional thinking)</span></label>
+        <div class="slider-wrap">
+          <span style="font-size:12px;color:#94A3B8">Safe</span>
+          <input type="range" min="0" max="1" step="0.05" value="${p.provocation}" aria-label="Provocation: from Safe to Bold" aria-valuetext="${Math.round(p.provocation*100)}%" oninput="state.profile.provocation=parseFloat(this.value);document.getElementById('provocationVal').textContent=Math.round(this.value*100)+'%';this.setAttribute('aria-valuetext',Math.round(this.value*100)+'%')">
+          <span class="slider-val" id="provocationVal">${Math.round(p.provocation*100)}%</span>
+          <span style="font-size:12px;color:#94A3B8">Bold</span>
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="pCtaStrength">CTA Strength</label>
+          <select id="pCtaStrength" onchange="state.profile.ctaStrength=this.value">${ctaOpts}</select>
+        </div>
+        <div class="field">
+          <label for="pDesiredEmotion">Desired Emotion</label>
+          <select id="pDesiredEmotion" onchange="state.profile.desiredEmotion=this.value">${emotionOpts}</select>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(0)">← Back</button>
+      <button class="btn btn-primary" onclick="saveProfile()">Save & Continue →</button>
+    </div>
+  </div>`;
+}
+
+function renderTags(arr, field) {
+  return arr.map(t => `<span class="tag selected" role="button" tabindex="0" aria-label="Remove ${t}" onclick="removeTag('${field}','${t}')" onkeydown="if(event.key==='Enter'||event.key===' '||event.key==='Delete'||event.key==='Backspace'){event.preventDefault();removeTag('${field}','${t}')}">${t} ×</span>`).join('');
+}
+
+function addTag(field, inputId) {
+  const input = document.getElementById(inputId);
+  const val = input.value.trim();
+  if (!val) return;
+  const max = field === 'industries' ? 5 : 10;
+  if (state.profile[field].length >= max) { toast(`Max ${max} ${field}`, 'err'); return; }
+  if (!state.profile[field].includes(val)) {
+    state.profile[field].push(val);
+    document.getElementById(field + 'Tags').innerHTML = renderTags(state.profile[field], field);
+  }
+  input.value = '';
+}
+
+function removeTag(field, val) {
+  state.profile[field] = state.profile[field].filter(t => t !== val);
+  document.getElementById(field + 'Tags').innerHTML = renderTags(state.profile[field], field);
+}
+
+function bindProfile() {}
+
+async function saveProfile() {
+  try {
+    await apiFetch(API + '/profile', {
+      method: 'POST',
+      headers: { 'X-Idempotency-Key': idempotencyKey() },
+      body: JSON.stringify(state.profile),
+    });
+    toast('Profile saved ✓');
+    goStep(2);
+  } catch (err) {
+    toast(err.message, 'err');
+  }
+}
+
+// ── Step 2: Channels ──────────────────────────────────────────────────────────
+
+function renderChannels() {
+  const icons = {linkedin:'💼',twitter:'🐦',facebook:'📘',instagram:'📸',reddit:'🤝',discord:'💬',telegram:'✈️',slack:'🔧',youtube:'▶️'};
+  return `
+  <div class="card">
+    <div class="card-title">Choose Your Channels</div>
+    <div class="card-sub">Select the platforms you actively post on. We'll generate personalised content for each one.</div>
+
+    <div class="tags" style="gap:12px">
+      ${CHANNELS.map(ch => {
+        const selected = state.channels.includes(ch);
+        return `<span class="tag ${selected?'selected':''}" style="padding:10px 18px;font-size:14px" role="checkbox" aria-checked="${selected}" tabindex="0" onclick="toggleChannel('${ch}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleChannel('${ch}')}">${icons[ch]} ${ch.charAt(0).toUpperCase()+ch.slice(1)}</span>`;
+      }).join('')}
+    </div>
+
+    <div style="margin-top:20px;padding:14px 16px;background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.15);border-radius:10px;font-size:13px;color:#94A3B8">
+      Selected: <strong style="color:#00C8FF">${state.channels.length}</strong> channel${state.channels.length!==1?'s':''} — we'll generate ${state.channels.length} piece${state.channels.length!==1?'s':''} of content
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
+      <button class="btn btn-primary" ${state.channels.length===0?'disabled':''} onclick="goStep(3);generateContent()">Generate Content →</button>
+    </div>
+  </div>`;
+}
+
+function toggleChannel(ch) {
+  if (state.channels.includes(ch)) {
+    state.channels = state.channels.filter(c => c !== ch);
+  } else {
+    state.channels.push(ch);
+  }
+  render();
+}
+
+function bindChannels() {}
+
+// ── Step 3: Content ───────────────────────────────────────────────────────────
+
+function renderContent() {
+  const generating = state.generatingContent;
+  const runs = state.contentRuns;
+  const activeRun = runs.find(r => r.channel === state.activeChannel);
+
+  return `
+  <div class="card">
+    <div class="card-title">Your Personalised Content</div>
+    <div class="card-sub">Content generated specifically for you, based on your profile and tone settings. Review and dispatch each post.</div>
+
+    ${generating ? `
+      <div style="text-align:center;padding:40px 0">
+        <div style="font-size:40px;margin-bottom:16px">⚡</div>
+        <div style="font-family:'Syne',sans-serif;font-size:18px;margin-bottom:8px">Generating your content<span class="loading-dots"></span></div>
+        <div style="font-size:13px;color:#94A3B8">Personalising for ${state.channels.length} channel${state.channels.length!==1?'s':''}...</div>
+      </div>` : `
+
+    <div class="channel-tabs">
+      ${runs.map(r => `
+        <div class="ch-tab ${r.channel===state.activeChannel?'active':''}" role="tab" tabindex="0" aria-selected="${r.channel===state.activeChannel}" aria-label="${r.channel}${r.status==='dispatched'?' (dispatched)':''}" onclick="state.activeChannel='${r.channel}';render()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();state.activeChannel='${r.channel}';render()}">
+          ${r.channel} ${r.status==='dispatched'?'✓':''}
+        </div>`).join('')}
+    </div>
+
+    ${activeRun ? `
+      <div class="content-box" id="contentBox" contenteditable="true">${activeRun.outputContent || ''}</div>
+      <div style="font-size:12px;color:#94A3B8;margin-top:8px">You can edit this directly before dispatching.</div>
+      <div class="content-actions">
+        <button onclick="copyContent()">📋 Copy</button>
+        <button onclick="regenerate('${activeRun.channel}')">🔄 Regenerate</button>
+        <button class="dispatch" onclick="dispatchContent('${activeRun.id}')">
+          ${activeRun.status==='dispatched' ? '✓ Dispatched' : '🚀 Dispatch to Review'}
+        </button>
+      </div>` : `
+      <div style="text-align:center;padding:32px;color:#94A3B8">Select a channel above</div>`}
+    `}
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
+      <button class="btn btn-green" onclick="goStep(4)">Finish Setup ✓</button>
+    </div>
+  </div>`;
+}
+
+function bindContent() {}
+
+async function generateContent() {
+  state.generatingContent = true;
+  state.contentRuns = [];
+  render();
+
+  try {
+    const data = await apiFetch(API + '/content/generate', {
+      method: 'POST',
+      headers: { 'X-Idempotency-Key': idempotencyKey() },
+      body: JSON.stringify({ channels: state.channels }),
+    });
+
+    // Fetch full run details
+    const runs = await Promise.all(
+      data.runs.map(r => apiFetch(API + '/content/' + r.runId).catch(() => ({ ...r, outputContent: '' })))
+    );
+    state.contentRuns = runs;
+    state.activeChannel = state.channels[0];
+  } catch (err) {
+    toast(err.message, 'err');
+  }
+
+  state.generatingContent = false;
+  render();
+}
+
+async function regenerate(channel) {
+  state.generatingContent = true;
+  render();
+  try {
+    const data = await apiFetch(API + '/content/generate', {
+      method: 'POST',
+      headers: { 'X-Idempotency-Key': idempotencyKey() },
+      body: JSON.stringify({ channels: [channel] }),
+    });
+    const run = await apiFetch(API + '/content/' + data.runs[0].runId).catch(() => ({}));
+    state.contentRuns = state.contentRuns.filter(r => r.channel !== channel).concat(run);
+    state.activeChannel = channel;
+  } catch (err) {
+    toast(err.message, 'err');
+  }
+  state.generatingContent = false;
+  render();
+}
+
+async function dispatchContent(runId) {
+  try {
+    await apiFetch(API + '/content/' + runId + '/dispatch', {
+      method: 'POST',
+      headers: { 'X-Idempotency-Key': idempotencyKey() },
+      body: JSON.stringify({}),
+    });
+    const run = state.contentRuns.find(r => r.id === runId);
+    if (run) run.status = 'dispatched';
+    toast('Sent for review ✓');
+    render();
+  } catch (err) {
+    toast(err.message, 'err');
+  }
+}
+
+function copyContent() {
+  const box = document.getElementById('contentBox');
+  if (box) {
+    navigator.clipboard.writeText(box.innerText).then(() => toast('Copied ✓'));
+  }
+}
+
+// ── Step 4: Done ──────────────────────────────────────────────────────────────
+
+function renderDone() {
+  return `
+  <div class="card">
+    <div class="success-hero">
+      <div class="success-icon">🎉</div>
+      <div class="success-title">You're all set!</div>
+      <div class="success-sub">Your profile is saved and your content has been sent for review. Once approved it will be posted to your social accounts automatically.</div>
+      <div style="margin-top:32px;display:flex;flex-direction:column;gap:12px;max-width:340px;margin-left:auto;margin-right:auto">
+        <div style="background:#111827;border:1px solid #1E2D42;border-radius:10px;padding:16px 20px;text-align:left">
+          <div style="font-size:12px;font-family:'DM Mono',monospace;color:#94A3B8;margin-bottom:4px">YOUR REF LINK</div>
+          <div style="font-size:14px;color:#00C8FF;word-break:break-all">https://alphaboost.app/ref/${affiliateCode}</div>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="goStep(0)">Update Profile</button>
+        <button class="btn btn-ghost" style="width:100%" onclick="goStep(3)">Review Content</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+
+function goStep(n) {
+  state.step = n;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  render();
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+if (!token) {
+  document.getElementById('main').innerHTML = `
+    <div class="card" style="text-align:center;padding:48px">
+      <div style="font-size:48px;margin-bottom:16px">🔒</div>
+      <div style="font-family:'Syne',sans-serif;font-size:22px;margin-bottom:8px">Access Required</div>
+      <div style="color:#94A3B8">This page requires a valid onboarding link. Please check your email from AlphaBoost.</div>
+    </div>`;
+} else {
+  render();
+}
+</script>
+</body>
+</html>

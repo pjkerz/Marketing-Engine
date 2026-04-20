@@ -1,0 +1,798 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  type      String   // "saas" | "coaching" | "ecommerce" | "consulting"
+  plan      String   @default("starter")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  config           BusinessConfig?
+  affiliates       Affiliate[]
+  emailLists       EmailList[]
+  conversionEvents ConversionEvent[]
+  generationRuns   ContentGenerationRun[]
+  funnelEvents     FunnelEvent[]
+  seoAudits        SeoAudit[]
+  llmAudits        LlmPresenceAudit[]
+
+  @@map("businesses")
+}
+
+model BusinessConfig {
+  id              String   @id @default(uuid())
+  businessId      String   @unique
+  business        Business @relation(fields: [businessId], references: [id])
+  brandName       String   @default("AlphaNoetics")
+  brandColor      String   @default("#0D1B2A")
+  accentColor     String   @default("#E87A2A")
+  logoUrl         String?
+  customDomain    String?
+  brandVoice      String?
+  toneKeywords    String[]
+  avoidPhrases    String[]
+  commissionType  String   @default("none")
+  commissionValue Float    @default(0)
+  sendingDomain   String?
+  fromName        String?
+  fromEmail       String?
+  dailySendCap    Int      @default(500)
+  warmupComplete  Boolean  @default(false)
+  conversionTypes Json     @default("[]")
+  landingPageUrl  String?
+  pricingPageUrl  String?
+  cmsWebhookUrl   String?  // SEO content publish webhook
+  autoApply       Boolean  @default(false) // AI optimisation auto-apply
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("business_configs")
+}
+
+model EmailList {
+  id          String   @id @default(uuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id])
+  name        String
+  description String?
+  tags        String[]
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscribers EmailSubscriber[]
+  campaigns   EmailCampaign[]
+
+  @@unique([businessId, name])
+  @@map("email_lists")
+}
+
+model EmailSubscriber {
+  id              String    @id @default(uuid())
+  businessId      String
+  listId          String
+  list            EmailList @relation(fields: [listId], references: [id])
+  email           String
+  name            String?
+  affiliateCode   String?
+  tags            String[]
+  status          String    @default("active")
+  source          String    @default("manual")
+  subscribedAt    DateTime  @default(now())
+  unsubscribedAt  DateTime?
+  bouncedAt       DateTime?
+  confirmedAt     DateTime?
+
+  sendEvents   EmailSendEvent[]
+
+  @@unique([listId, email])
+  @@map("email_subscribers")
+}
+
+// ── Module 07 — AlphaMail Engine ──────────────────────────────────────────────
+
+model EmailCampaign {
+  id                String   @id @default(uuid())
+  businessId        String
+  listId            String
+  list              EmailList @relation(fields: [listId], references: [id])
+  name              String
+  subject           String
+  previewText       String?
+  html              String
+  text              String?
+  status            String   @default("draft")
+  scheduledAt       DateTime?
+  sentAt            DateTime?
+  totalSent         Int      @default(0)
+  totalOpened       Int      @default(0)
+  totalClicked      Int      @default(0)
+  totalBounced      Int      @default(0)
+  totalUnsubscribed Int      @default(0)
+  spamScore         Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  sendEvents EmailSendEvent[]
+
+  @@index([businessId, status])
+  @@map("email_campaigns")
+}
+
+model EmailSendEvent {
+  id           String           @id @default(uuid())
+  campaignId   String?
+  campaign     EmailCampaign?   @relation(fields: [campaignId], references: [id])
+  dripStepId   String?          // set for drip sends instead of campaignId
+  subscriberId String
+  subscriber   EmailSubscriber  @relation(fields: [subscriberId], references: [id])
+  businessId   String
+  messageId    String?
+  status       String           @default("sent")
+  sentAt       DateTime         @default(now())
+  openedAt     DateTime?
+  clickedAt    DateTime?
+  bouncedAt    DateTime?
+  complainedAt DateTime?
+  openCount    Int              @default(0)
+  clickCount   Int              @default(0)
+
+  @@index([campaignId])
+  @@index([dripStepId, subscriberId])
+  @@index([subscriberId])
+  @@index([businessId, sentAt])
+  @@map("email_send_events")
+}
+
+model EmailDripSequence {
+  id           String   @id @default(uuid())
+  businessId   String
+  listId       String
+  name         String
+  triggerType  String
+  triggerValue String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  steps EmailDripStep[]
+
+  @@index([businessId, active])
+  @@map("email_drip_sequences")
+}
+
+model EmailDripStep {
+  id         String            @id @default(uuid())
+  sequenceId String
+  sequence   EmailDripSequence @relation(fields: [sequenceId], references: [id])
+  stepNumber Int
+  delayDays  Int               @default(0)
+  subject    String
+  html       String
+  text       String?
+  condition  String?
+  createdAt  DateTime          @default(now())
+
+  @@map("email_drip_steps")
+}
+
+model DomainWarmup {
+  id             String   @id @default(uuid())
+  businessId     String   @unique
+  sendingDomain  String
+  startedAt      DateTime @default(now())
+  currentDay     Int      @default(1)
+  dailySendLimit Int      @default(50)
+  complete       Boolean  @default(false)
+  warmupSchedule Json
+
+  @@map("domain_warmups")
+}
+
+model Affiliate {
+  id         String   @id @default(uuid())
+  businessId String
+  code       String   @unique
+  name       String
+  email      String   @unique
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business         Business             @relation(fields: [businessId], references: [id])
+  profile          AffiliateProfile[]
+  assets           ProfileAsset[]
+  resumeJobs       ResumeProcessingJob[]
+  generationRuns   ContentGenerationRun[]
+  conversionEvents ConversionEvent[]
+  mediaJobs        MediaGenerationJob[]
+
+  @@map("affiliates")
+}
+
+model AffiliateProfile {
+  id          String   @id @default(uuid())
+  affiliateId String
+  version     Int      @default(1)
+  source      String   // "resume" | "manual" | "autofill"
+  status      String   @default("active") // "active" | "locked"
+  lockedAt    DateTime?
+  lockedBy    String?
+
+  // Core extracted fields
+  role            String?
+  seniority       String?
+  industries      String[]  @default([])
+  skills          String[]  @default([])
+  authoritySignal String?
+  painPoint       String?
+
+  // Tone defaults
+  directness   Float  @default(0.6)
+  provocation  Float  @default(0.3)
+  humor        Float  @default(0.2)
+  ctaStrength  String @default("soft") // invisible | soft | direct | strong
+  desiredEmotion String @default("curiosity")
+  goal         String @default("signups")
+  format       String @default("framework")
+  voice        String @default("operator")
+  controversy  String @default("balanced")
+  platforms    String[] @default(["linkedin"])
+
+  confidence   Float  @default(0.5)
+  extractionId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  affiliate        Affiliate @relation(fields: [affiliateId], references: [id])
+  generationRuns   ContentGenerationRun[]
+
+  @@map("affiliate_profiles")
+}
+
+model ProfileAsset {
+  id           String   @id @default(uuid())
+  affiliateId  String
+  assetType    String   // "resume"
+  fileName     String
+  mimeType     String
+  fileSizeBytes Int
+  zohoFileId   String?
+  zohoFolderId String?
+  metadata     Json     @default("{}") // contains encrypted resume text
+  uploadedAt   DateTime @default(now())
+
+  affiliate Affiliate @relation(fields: [affiliateId], references: [id])
+
+  @@map("profile_assets")
+}
+
+model ResumeProcessingJob {
+  id          String   @id @default(uuid())
+  affiliateId String
+  assetId     String?
+  status      String   @default("queued") // queued | processing | done | failed
+  parseResult Json?
+  errorCode   String?
+  errorMessage String?
+  attempts    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  affiliate Affiliate @relation(fields: [affiliateId], references: [id])
+
+  @@map("resume_processing_jobs")
+}
+
+model ProfileExtraction {
+  id              String   @id @default(uuid())
+  affiliateId     String
+  resumeJobId     String?
+  status          String   @default("pending") // pending | done | failed
+  rawResponse     String?
+  normalizedOutput Json?
+  repairAttempted Boolean  @default(false)
+  errorCode       String?
+  createdAt       DateTime @default(now())
+
+  @@map("profile_extractions")
+}
+
+model ContentGenerationRun {
+  id            String   @id @default(uuid())
+  businessId    String
+  affiliateId   String
+  profileId     String
+  channel       String   // linkedin | facebook | twitter | instagram | tiktok | reddit | discord | telegram | slack
+  status        String   @default("pending") // pending | generating | scored | approved | dispatched | rejected | failed
+  inputBrief    Json?
+  outputContent String?
+  personalizationSummary Json?
+  flaggedAt     DateTime?
+  flagReason    String?
+  flagNote      String?
+  // Module 04 — Affiliate Content Studio
+  editedContent        String?
+  editedAt             DateTime?
+  submittedForApproval Boolean  @default(false)
+  submittedAt          DateTime?
+  mediaAssetId         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  business       Business         @relation(fields: [businessId], references: [id])
+  affiliate      Affiliate        @relation(fields: [affiliateId], references: [id])
+  profile        AffiliateProfile @relation(fields: [profileId], references: [id])
+  scores         ContentScore[]
+  mediaAssets    ContentMediaAsset[]
+  mediaJobs      MediaGenerationJob[]
+  contentSlots   ContentSlot[]
+
+  @@map("content_generation_runs")
+}
+
+model ContentScore {
+  id            String   @id @default(uuid())
+  runId         String
+  qualityScore  Int      // 0–100
+  riskScore     Int      // 0–100 (lower = safer)
+  conversionScore Int    // 0–100
+  qualityBreakdown    Json @default("{}")
+  riskBreakdown       Json @default("{}")
+  conversionBreakdown Json @default("{}")
+  label         String   // "strong" | "acceptable" | "revise"
+  scoredAt      DateTime @default(now())
+
+  run ContentGenerationRun @relation(fields: [runId], references: [id])
+
+  @@map("content_scores")
+}
+
+model ContentMediaAsset {
+  id          String   @id @default(uuid())
+  runId       String
+  affiliateId String
+  assetType   String   // "generated" | "picked"
+  zohoFileId  String?
+  zohoBrowseUrl String?
+  mimeType    String?
+  aspectRatio String?
+  attachedAt  DateTime @default(now())
+
+  run ContentGenerationRun @relation(fields: [runId], references: [id])
+
+  @@map("content_media_assets")
+}
+
+model MediaGenerationJob {
+  id                String   @id @default(uuid())
+  affiliateId       String
+  generationRunId   String?
+  prompt            String
+  aspectRatio       String   // "9:16" | "1:1" | "16:9"
+  numberOfImages    Int      @default(4)
+  candidatesBase64  Json?    // stored temporarily — discarded after approval
+  status            String   // pending | preview_ready | approved | rejected | expired | failed
+  selectedCandidateId String?
+  errorCode         String?
+  errorMessage      String?
+  expiresAt         DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  affiliate Affiliate            @relation(fields: [affiliateId], references: [id])
+  run       ContentGenerationRun? @relation(fields: [generationRunId], references: [id])
+
+  @@map("media_generation_jobs")
+}
+
+model ConversionEvent {
+  id              String   @id @default(uuid())
+  businessId      String
+  affiliateId     String?
+  affiliateCode   String?
+  generationRunId String?
+  contentRunId    String?
+  sessionId       String?
+  visitorId       String?
+  conversionType  String   @default("unknown")
+  conversionValue Float    @default(0)
+  eventType       String   @default("signup_completed")
+  channel         String?
+  campaignId      String?
+  referrerUrl     String?
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  occurredAt      DateTime @default(now())
+  metadata        Json     @default("{}")
+
+  business  Business   @relation(fields: [businessId], references: [id])
+  affiliate Affiliate? @relation(fields: [affiliateId], references: [id])
+
+  @@index([businessId, affiliateCode])
+  @@index([businessId, occurredAt])
+  @@map("conversion_events")
+}
+
+model FunnelEvent {
+  id              String   @id @default(uuid())
+  businessId      String
+  business        Business @relation(fields: [businessId], references: [id])
+  sessionId       String
+  visitorId       String?
+  userId          String?
+  affiliateCode   String?
+  contentRunId    String?
+  campaignId      String?
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  utmContent      String?
+  eventType       String
+  channel         String
+  funnelStage     String
+  url             String?
+  pageTitle       String?
+  referrerUrl     String?
+  contentFormat   String?
+  platform        String?
+  variantId       String?
+  variantGroup    String?
+  deviceType      String?
+  userAgent       String?
+  ipPrefix        String?
+  conversionType  String?
+  conversionValue Float?
+  timestamp       DateTime @default(now())
+  serverTs        DateTime @default(now())
+
+  @@index([businessId, sessionId])
+  @@index([businessId, affiliateCode])
+  @@index([businessId, timestamp])
+  @@index([businessId, funnelStage])
+  @@map("funnel_events")
+}
+
+model VisitorSession {
+  id              String   @id @default(uuid())
+  businessId      String
+  sessionId       String   @unique
+  visitorId       String?
+  userId          String?
+  affiliateCode   String?
+  entryUrl        String?
+  entryChannel    String?
+  entryContentId  String?
+  firstSeenAt     DateTime @default(now())
+  lastSeenAt      DateTime @updatedAt
+  convertedAt     DateTime?
+  conversionType  String?
+  conversionValue Float?
+  eventCount      Int      @default(0)
+  stages          String[]
+
+  @@index([businessId, visitorId])
+  @@index([businessId, affiliateCode])
+  @@map("visitor_sessions")
+}
+
+model AbTest {
+  id              String   @id @default(uuid())
+  businessId      String
+  name            String
+  type            String
+  status          String   @default("running")
+  variants        Json
+  winnerVariantId String?
+  startedAt       DateTime @default(now())
+  endedAt         DateTime?
+  createdAt       DateTime @default(now())
+
+  results         AbTestResult[]
+
+  @@index([businessId, status])
+  @@map("ab_tests")
+}
+
+model AbTestResult {
+  id             String   @id @default(uuid())
+  testId         String
+  test           AbTest   @relation(fields: [testId], references: [id])
+  variantId      String
+  impressions    Int      @default(0)
+  clicks         Int      @default(0)
+  conversions    Int      @default(0)
+  conversionRate Float    @default(0)
+  updatedAt      DateTime @updatedAt
+
+  @@unique([testId, variantId])
+  @@map("ab_test_results")
+}
+
+model OptimisationInsight {
+  id             String    @id @default(uuid())
+  businessId     String
+  insightType    String
+  finding        String
+  evidence       Json
+  recommendation String
+  impact         String
+  status         String    @default("new")
+  appliedAt      DateTime?
+  appliedBy      String?
+  createdAt      DateTime  @default(now())
+
+  @@index([businessId, status])
+  @@index([businessId, impact])
+  @@map("optimisation_insights")
+}
+
+model OptimisationRule {
+  id          String   @id @default(uuid())
+  businessId  String
+  ruleType    String
+  active      Boolean  @default(true)
+  config      Json
+  createdFrom String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([businessId, ruleType])
+  @@map("optimisation_rules")
+}
+
+// ── Module 04 — Content Library ──────────────────────────────────────────────
+
+model ContentLibraryAsset {
+  id           String   @id @default(uuid())
+  businessId   String
+  type         String   // image | video | gif
+  url          String
+  thumbnailUrl String?
+  filename     String
+  fileSize     Int
+  tags         String[]
+  uploadedBy   String   // affiliateCode or "admin"
+  usageCount   Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  @@index([businessId, type])
+  @@map("content_library_assets")
+}
+
+// ── Module 05 — Content Calendar ─────────────────────────────────────────────
+
+model AffiliateInstance {
+  id                 String   @id @default(uuid())
+  affiliateId        String   @unique
+  businessId         String
+  weeklyPostTarget   Int      @default(5)
+  preferredPlatforms String[]
+  preferredPostTimes Json     @default("{}")
+  // { linkedin: ["08:00","17:00"], instagram: ["19:00"], ... }
+  timezone           String   @default("America/New_York")
+  personalBio        String?
+  contentThemes      String[]
+  avoidTopics        String[]
+  personalHashtags   String[]
+  onboardingComplete Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("affiliate_instances")
+}
+
+model AffiliateContentPlan {
+  id            String   @id @default(uuid())
+  affiliateId   String
+  businessId    String
+  weekStartDate DateTime
+  status        String   @default("draft")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  slots ContentSlot[]
+
+  @@unique([affiliateId, weekStartDate])
+  @@map("affiliate_content_plans")
+}
+
+model ContentSlot {
+  id            String   @id @default(uuid())
+  planId        String
+  businessId    String
+  platform      String
+  scheduledDate DateTime
+  status        String   @default("empty")
+  // empty | draft | written | submitted | approved | posted
+  contentRunId  String?
+  manualContent String?
+  mediaAssetId  String?
+  note          String?
+  exportedAt    DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  plan       AffiliateContentPlan @relation(fields: [planId], references: [id])
+  contentRun ContentGenerationRun? @relation(fields: [contentRunId], references: [id])
+
+  @@map("content_slots")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorType  String   // affiliate | admin | system
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  changes    Json?
+  createdAt  DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+// ── Module 08: SEO Intelligence ──────────────────────────────────────────────
+
+model SeoAudit {
+  id                 String    @id @default(uuid())
+  businessId         String
+  business           Business  @relation(fields: [businessId], references: [id])
+  clientUrl          String
+  competitorUrl      String
+  status             String    @default("pending")
+  clientKeywords     Json      @default("[]")
+  competitorKeywords Json      @default("[]")
+  gapKeywords        Json      @default("[]")
+  completedAt        DateTime?
+  createdAt          DateTime  @default(now())
+
+  @@index([businessId])
+  @@map("seo_audits")
+}
+
+model SeoContent {
+  id              String    @id @default(uuid())
+  businessId      String
+  auditId         String?
+  keyword         String
+  contentType     String
+  title           String?
+  metaTitle       String?
+  metaDescription String?
+  html            String?
+  wordCount       Int?
+  status          String    @default("draft")
+  publishedUrl    String?
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([businessId, status])
+  @@map("seo_content")
+}
+
+// ── Module 09: Paid Keyword Intelligence ─────────────────────────────────────
+
+model KeywordTarget {
+  id               String   @id @default(uuid())
+  businessId       String
+  keyword          String
+  source           String
+  monthlyVolume    Int?
+  cpcEstimate      Float?
+  competition      String?
+  trend            String?
+  intentScore      Float?
+  opportunityScore Float?
+  matchType        String?
+  status           String   @default("research")
+  addedAt          DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([businessId, keyword])
+  @@index([businessId, opportunityScore])
+  @@map("keyword_targets")
+}
+
+// ── Module 10: LLM Presence Analysis ─────────────────────────────────────────
+
+model LlmPresenceAudit {
+  id          String               @id @default(uuid())
+  businessId  String
+  business    Business             @relation(fields: [businessId], references: [id])
+  status      String               @default("pending")
+  queries     Json                 @default("[]")
+  competitors String[]
+  summary     Json?
+  results     LlmPresenceResult[]
+  createdAt   DateTime             @default(now())
+  completedAt DateTime?
+
+  @@index([businessId])
+  @@map("llm_presence_audits")
+}
+
+model LlmPresenceResult {
+  id                  String           @id @default(uuid())
+  auditId             String
+  audit               LlmPresenceAudit @relation(fields: [auditId], references: [id])
+  businessId          String
+  llmName             String
+  query               String
+  queryCategory       String
+  response            String
+  mentionsBrand       Boolean          @default(false)
+  brandContext        String?
+  mentionsCompetitors Json             @default("[]")
+  authorityLanguage   String?
+  recommendations     String?
+  failed              Boolean          @default(false)
+  auditedAt           DateTime         @default(now())
+
+  @@index([auditId, llmName])
+  @@map("llm_presence_results")
+}
+
+// ── Module 11: Conversion Dashboard ──────────────────────────────────────────
+
+model DashboardSnapshot {
+  id           String   @id @default(uuid())
+  businessId   String
+  snapshotDate DateTime
+  data         Json
+  createdAt    DateTime @default(now())
+
+  @@unique([businessId, snapshotDate])
+  @@index([businessId])
+  @@map("dashboard_snapshots")
+}
+
+// ── Module 12: Unified Intelligence Layer ────────────────────────────────────
+
+model CrossChannelRecommendation {
+  id              String   @id @default(uuid())
+  businessId      String
+  title           String
+  insight         String
+  recommendation  String
+  channels        String[]
+  actions         Json     @default("[]")
+  estimatedImpact String
+  priority        String
+  autoExecutable  Boolean  @default(false)
+  status          String   @default("new")
+  executedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  @@index([businessId, status, priority])
+  @@map("cross_channel_recommendations")
+}
+
+model IntelligenceFeedEvent {
+  id             String   @id @default(uuid())
+  businessId     String
+  eventType      String
+  channel        String
+  title          String
+  detail         String
+  actionLabel    String?
+  actionEndpoint String?
+  actionPayload  Json?
+  read           Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([businessId, read, createdAt])
+  @@map("intelligence_feed_events")
+}

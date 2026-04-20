@@ -1,0 +1,1 @@
+{"version":3,"file":"microsoftAdsClient.d.ts","sourceRoot":"","sources":["../../../src/integrations/microsoftAds/microsoftAdsClient.ts"],"names":[],"mappings":"AACA,OAAO,KAAK,EAAE,WAAW,EAAE,MAAM,0CAA0C,CAAC;AA4B5E,wBAAsB,eAAe,CAAC,YAAY,EAAE,MAAM,EAAE,GAAG,OAAO,CAAC,WAAW,EAAE,CAAC,CA4DpF"}

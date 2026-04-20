@@ -1,0 +1,28 @@
+export declare const env: {
+    PORT: number;
+    NODE_ENV: "development" | "production" | "test";
+    DATABASE_URL: string;
+    REDIS_URL: string;
+    V2_JWT_SECRET: string;
+    V2_ENCRYPTION_KEY: string;
+    GROQ_API_KEY: string;
+    GROQ_MODEL_EXTRACT: string;
+    GROQ_MODEL_CONTENT: string;
+    GOOGLE_AI_API_KEY: string;
+    GOOGLE_AI_IMAGE_BATCH_MODE: boolean;
+    GOOGLE_AI_IMAGE_MAX_GENERATIONS_PER_RUN: number;
+    ZOHO_CLIENT_ID: string;
+    ZOHO_CLIENT_SECRET: string;
+    ZOHO_REFRESH_TOKEN: string;
+    ZOHO_FOLDER_ID: string;
+    ZOHO_AFFILIATES_FOLDER_ID: string;
+    CREDS_MD_PATH: string;
+    AFFILIATES_JSON_PATH: string;
+    EMAIL_FROM: string;
+    MAKE_WEBHOOK_URL?: string | undefined;
+    RESEND_API_KEY?: string | undefined;
+    RESEND_WEBHOOK_SECRET?: string | undefined;
+    TRACKING_PIXEL_SECRET?: string | undefined;
+    SESSION_STITCH_SECRET?: string | undefined;
+};
+//# sourceMappingURL=env.d.ts.map

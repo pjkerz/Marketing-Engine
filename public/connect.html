@@ -156,6 +156,11 @@ const affiliateCode = (() => {
   try { return JSON.parse(atob(token.split('.')[1])).affiliateCode || ''; } catch { return ''; }
 })();
 
+// Store v2 JWT in localStorage so affiliate.html can pick it up
+if (token) {
+  try { localStorage.setItem('v2_affiliate_token', token); } catch(_) {}
+}
+
 const API = '/v2/api/affiliate/' + affiliateCode;
 
 let state = {
@@ -665,8 +670,9 @@ function renderDone() {
           <div style="font-size:12px;font-family:'DM Mono',monospace;color:#94A3B8;margin-bottom:4px">YOUR REF LINK</div>
           <div style="font-size:14px;color:#00C8FF;word-break:break-all">https://alphaboost.app/ref/${affiliateCode}</div>
         </div>
-        <button class="btn btn-primary" style="width:100%" onclick="goStep(0)">Update Profile</button>
-        <button class="btn btn-ghost" style="width:100%" onclick="goStep(3)">Review Content</button>
+        <a href="/affiliate" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none">Go to my Dashboard →</a>
+        <button class="btn btn-ghost" style="width:100%" onclick="goStep(3)">Review Content First</button>
+        <button class="btn btn-ghost" style="width:100%;font-size:11px" onclick="goStep(0)">Update Profile</button>
       </div>
     </div>
   </div>`;

@@ -1,0 +1,52 @@
+name: alphanoetic-marketing-engine
+region: nyc
+
+services:
+- name: api
+  github:
+    repo: pjkerz/Marketing-Engine
+    branch: main
+    deploy_on_push: true
+  run_command: node dist/index.js
+  http_port: 3457
+  instance_size_slug: basic-xxs
+  instance_count: 1
+  health_check:
+    http_path: /v2/health
+    initial_delay_seconds: 30
+    period_seconds: 30
+  envs:
+  - key: NODE_ENV
+    value: production
+  - key: PORT
+    value: "3457"
+  - key: DATABASE_URL
+    scope: RUN_TIME
+    type: SECRET
+  - key: REDIS_URL
+    scope: RUN_TIME
+    type: SECRET
+  - key: V2_JWT_SECRET
+    scope: RUN_TIME
+    type: SECRET
+  - key: V2_ENCRYPTION_KEY
+    scope: RUN_TIME
+    type: SECRET
+  - key: GROQ_API_KEY
+    scope: RUN_TIME
+    type: SECRET
+  - key: GROQ_MODEL_EXTRACT
+    value: llama-3.1-8b-instant
+  - key: GROQ_MODEL_CONTENT
+    value: llama-3.3-70b-versatile
+  - key: GOOGLE_AI_API_KEY
+    scope: RUN_TIME
+    type: SECRET
+  - key: GOOGLE_AI_IMAGE_BATCH_MODE
+    value: "true"
+  - key: GOOGLE_AI_IMAGE_MAX_GENERATIONS_PER_RUN
+    value: "3"
+  routes:
+  - path: /v2
+  - path: /connect
+  - path: /affiliate

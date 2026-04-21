@@ -7,6 +7,7 @@ services:
     repo: pjkerz/Marketing-Engine
     branch: main
     deploy_on_push: true
+  build_command: npx prisma generate && npm run build
   run_command: node dist/index.js
   http_port: 3457
   instance_size_slug: basic-xxs
@@ -47,6 +48,4 @@ services:
   - key: GOOGLE_AI_IMAGE_MAX_GENERATIONS_PER_RUN
     value: "3"
   routes:
-  - path: /v2
-  - path: /connect
-  - path: /affiliate
+  - path: /

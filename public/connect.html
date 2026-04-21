@@ -4,700 +4,776 @@
 <meta charset="UTF-8"/>
   <meta name="google-site-verification" content="u_97M9Nks9CZYWC6AREy3sSwmL1AiR3B62WWBEse-lA" />
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>AlphaBoost — Affiliate Setup</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&family=DM+Mono&display=swap" rel="stylesheet"/>
+<title>AlphaBoost — Connect Your Accounts</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:#020617;color:#F1F5F9;font-family:'DM Sans',sans-serif;min-height:100vh}
-:focus-visible{outline:2px solid #00C8FF;outline-offset:2px;border-radius:4px}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* Header */
-.header{background:#111827;border-bottom:1px solid #1E2D42;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
-.brand{font-family:'Syne',sans-serif;font-weight:800;font-size:18px}.brand span{color:#00C8FF}
-.step-label{font-size:12px;color:#94A3B8;font-family:'DM Mono',monospace}
+  :root {
+    --brand:     #4F46E5;
+    --brand-glow:#6366F1;
+    --bg:        #08080F;
+    --surface:   #10101C;
+    --border:    rgba(255,255,255,0.08);
+    --text:      #E8E8F0;
+    --muted:     #6B6B80;
+    --success:   #22C55E;
+    --li-color:  #0A66C2;
+    --fb-color:  #1877F2;
+    --tw-color:  #000000;
+    --yt-color:  #FF0000;
+  }
 
-/* Progress */
-.progress-wrap{padding:20px 24px 0;max-width:780px;margin:0 auto}
-.progress-track{display:flex;align-items:center;gap:0;margin-bottom:32px}
-.step-bubble{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;flex-shrink:0;transition:all .3s}
-.step-bubble.done{background:#22C55E;color:#020617}
-.step-bubble.active{background:#00C8FF;color:#020617;box-shadow:0 0 16px rgba(0,200,255,0.4)}
-.step-bubble.pending{background:#1E2D42;color:#94A3B8}
-.step-line{flex:1;height:2px;background:#1E2D42;transition:background .3s}
-.step-line.done{background:#22C55E}
-.step-names{display:flex;justify-content:space-between;margin-top:8px}
-.step-name{font-size:11px;font-family:'DM Mono',monospace;color:#94A3B8;text-align:center;width:32px}
-.step-name.active{color:#00C8FF}
-.step-name.done{color:#22C55E}
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 48px 20px 80px;
+  }
 
-/* Main */
-.main{max-width:780px;margin:0 auto;padding:0 24px 60px}
-.card{background:#111827;border:1px solid #1E2D42;border-radius:16px;padding:32px;margin-bottom:20px}
-.card-title{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;margin-bottom:6px}
-.card-sub{font-size:14px;color:#94A3B8;margin-bottom:24px;line-height:1.6}
+  /* subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,70,229,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,70,229,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
 
-/* Form fields */
-.field{margin-bottom:20px}
-.field label{display:block;font-size:13px;font-family:'DM Mono',monospace;color:#94A3B8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
-.field input,.field select,.field textarea{width:100%;background:#020617;border:1px solid #1E2D42;border-radius:8px;padding:12px 14px;color:#F1F5F9;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s}
-.field input:focus,.field select:focus,.field textarea:focus{border-color:#00C8FF}
-.field input:focus-visible,.field select:focus-visible,.field textarea:focus-visible{outline:2px solid #00C8FF;outline-offset:1px}
-.field textarea{resize:vertical;min-height:80px;line-height:1.5}
-.field select option{background:#111827}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:540px){.field-row{grid-template-columns:1fr}}
+  /* glow blob */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(79,70,229,0.15) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
 
-/* Slider */
-.slider-wrap{display:flex;align-items:center;gap:12px}
-.slider-wrap input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:rgba(255,255,255,0.1);outline:none;cursor:pointer}
-.slider-wrap input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#00C8FF;cursor:pointer}
-.slider-wrap input[type=range]:focus-visible{outline:2px solid #00C8FF;outline-offset:4px;border-radius:4px}
-.slider-val{font-family:'DM Mono',monospace;font-size:14px;color:#00C8FF;min-width:32px;text-align:right}
+  .wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 520px;
+  }
 
-/* Tags */
-.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.tag{padding:6px 14px;border-radius:20px;border:1px solid #1E2D42;font-size:13px;cursor:pointer;transition:all .2s;background:#020617;color:#F1F5F9}
-.tag.selected{border-color:#00C8FF;color:#00C8FF;background:rgba(0,200,255,0.08)}
-.tag:focus-visible,.ch-tab:focus-visible{outline:2px solid #00C8FF;outline-offset:2px}
-.tag-input-wrap{display:flex;gap:8px;margin-bottom:8px}
-.tag-input-wrap input{flex:1;background:#020617;border:1px solid #1E2D42;border-radius:8px;padding:10px 14px;color:#F1F5F9;font-size:14px;font-family:'DM Sans',sans-serif;outline:none}
-.tag-input-wrap input:focus{border-color:#00C8FF}
-.tag-input-wrap input:focus-visible{outline:2px solid #00C8FF;outline-offset:1px}
-.tag-input-wrap button{padding:10px 16px;background:#1E2D42;border:none;border-radius:8px;color:#F1F5F9;cursor:pointer;font-size:13px}
-.tag-input-wrap button:hover{background:#334155}
+  /* ── Logo ── */
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 48px;
+  }
+  .logo-mark {
+    width: 36px;
+    height: 36px;
+    background: var(--brand);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: #fff;
+    letter-spacing: -1px;
+  }
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -0.3px;
+    color: #fff;
+  }
 
-/* Upload zone */
-.upload-zone{border:2px dashed #1E2D42;border-radius:12px;padding:40px 24px;text-align:center;cursor:pointer;transition:all .3s}
-.upload-zone:hover,.upload-zone.drag{border-color:#00C8FF;background:rgba(0,200,255,0.04)}
-.upload-zone.uploaded{border-color:#22C55E;background:rgba(34,197,94,0.04)}
-.upload-zone:focus-visible{outline:2px solid #00C8FF;outline-offset:3px}
-.upload-icon{font-size:40px;margin-bottom:12px}
-.upload-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;margin-bottom:6px}
-.upload-sub{font-size:13px;color:#94A3B8}
+  /* ── Header ── */
+  .headline {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: clamp(28px, 5vw, 38px);
+    line-height: 1.1;
+    letter-spacing: -1px;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .headline span {
+    color: var(--brand-glow);
+  }
+  .subtext {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 40px;
+  }
 
-/* Consent */
-.consent-box{background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.2);border-radius:10px;padding:16px 18px;font-size:13px;color:#94A3B8;line-height:1.6;margin-bottom:20px}
-.consent-box strong{color:#F1F5F9}
+  /* ── Step indicator ── */
+  .steps {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 36px;
+  }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .step.done { color: var(--success); }
+  .step.active { color: var(--text); }
+  .step-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .step.done .step-num { background: var(--success); border-color: var(--success); color: #fff; }
+  .step.active .step-num { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .step-divider { flex: 1; height: 1px; background: var(--border); margin: 0 12px; max-width: 40px; }
 
-/* Buttons */
-.btn{padding:14px 28px;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;border:none;transition:all .2s}
-.btn-primary{background:#00C8FF;color:#020617}
-.btn-primary:hover{background:#38d9ff}
-.btn-primary:disabled{background:#1E2D42;color:#94A3B8;cursor:not-allowed}
-.btn-ghost{background:transparent;border:1px solid #1E2D42;color:#94A3B8}
-.btn-ghost:hover{border-color:#94A3B8;color:#F1F5F9}
-.btn-green{background:#22C55E;color:#020617}
-.btn-green:hover{background:#4ade80}
-.btn-row{display:flex;justify-content:space-between;align-items:center;margin-top:28px;gap:12px}
+  /* ── Platform cards ── */
+  .platforms { display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px; }
 
-/* Status */
-.status-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-size:12px;font-family:'DM Mono',monospace}
-.status-pill.processing{background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);color:#fbbf24}
-.status-pill.done{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#22C55E}
-.status-pill.error{background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);color:#f87171}
-.pulse{width:8px;height:8px;border-radius:50%;background:currentColor;animation:pulse 1.2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+  .platform-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: border-color 0.2s, transform 0.15s;
+  }
+  .platform-card:hover { border-color: rgba(79,70,229,0.4); transform: translateY(-1px); }
+  .platform-card.connected {
+    border-color: rgba(34,197,94,0.3);
+    background: rgba(34,197,94,0.04);
+  }
 
-/* Content preview */
-.channel-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
-.ch-tab{padding:6px 14px;border-radius:20px;border:1px solid #1E2D42;font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .2s;color:#94A3B8}
-.ch-tab.active{border-color:#00C8FF;color:#00C8FF;background:rgba(0,200,255,0.08)}
-.content-box{background:#020617;border:1px solid #1E2D42;border-radius:10px;padding:20px;font-size:14px;line-height:1.7;color:#E2E8F0;min-height:120px;white-space:pre-wrap;position:relative}
-.content-actions{display:flex;gap:8px;margin-top:12px}
-.content-actions button{padding:8px 16px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;border:1px solid #1E2D42;background:transparent;color:#94A3B8;transition:all .2s}
-.content-actions button:hover{border-color:#00C8FF;color:#00C8FF}
-.content-actions button.dispatch{background:#22C55E;border-color:#22C55E;color:#020617;font-weight:600}
-.content-actions button.dispatch:hover{background:#4ade80}
+  .platform-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .platform-icon svg { width: 22px; height: 22px; }
 
-/* Success */
-.success-hero{text-align:center;padding:48px 24px}
-.success-icon{font-size:64px;margin-bottom:16px}
-.success-title{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;margin-bottom:12px}
-.success-sub{font-size:16px;color:#94A3B8;line-height:1.6;max-width:480px;margin:0 auto}
+  .platform-info { flex: 1; min-width: 0; }
+  .platform-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: #fff;
+    margin-bottom: 2px;
+  }
+  .platform-desc { font-size: 13px; color: var(--muted); }
 
-/* Toast */
-.toast{position:fixed;bottom:24px;right:24px;background:#1E2D42;border:1px solid #334155;border-radius:10px;padding:14px 18px;font-size:14px;z-index:9999;display:none;max-width:320px}
-.toast.show{display:block}
-.toast.ok{border-color:#22C55E;color:#22C55E}
-.toast.err{border-color:#f87171;color:#f87171}
+  .connect-btn {
+    padding: 9px 20px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .connect-btn.idle {
+    background: var(--brand);
+    color: #fff;
+  }
+  .connect-btn.idle:hover { background: var(--brand-glow); transform: scale(1.03); }
+  .connect-btn.loading {
+    background: rgba(255,255,255,0.08);
+    color: var(--muted);
+    cursor: default;
+  }
+  .connect-btn.done-btn {
+    background: rgba(34,197,94,0.12);
+    color: var(--success);
+    cursor: default;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-.loading-dots::after{content:'.';animation:dots 1.2s steps(3,end) infinite}
-@keyframes dots{0%{content:'.'}33%{content:'..'}66%{content:'...'}}
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #1a1a2e;
+    border: 1px solid rgba(34,197,94,0.4);
+    color: var(--success);
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 100;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
 
-/* Skip link */
-.skip-link{position:absolute;top:-40px;left:0;background:#00C8FF;color:#020617;padding:8px 16px;font-weight:700;z-index:9999;border-radius:0 0 8px 0;text-decoration:none;font-size:14px}
-.skip-link:focus{top:0}
+  /* ── Affiliate code box ── */
+  .code-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .code-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin-bottom: 8px; }
+  .code-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: var(--brand-glow);
+    margin-bottom: 12px;
+  }
+  .ref-link {
+    background: rgba(79,70,229,0.08);
+    border: 1px solid rgba(79,70,229,0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .ref-link code { color: var(--text); font-size: 12px; word-break: break-all; }
+  .copy-link-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .copy-link-btn:hover { border-color: var(--brand); color: var(--text); }
+
+  /* ── All connected success banner ── */
+  .success-banner {
+    display: none;
+    background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .success-banner.show { display: block; }
+  .success-banner .icon { font-size: 36px; margin-bottom: 10px; }
+  .success-banner h3 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--success);
+    margin-bottom: 6px;
+  }
+  .success-banner p { font-size: 14px; color: var(--muted); }
+
+  /* ── Error state ── */
+  .error-state {
+    display: none;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 14px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    color: #FCA5A5;
+    font-size: 14px;
+  }
+  .error-state.show { display: block; }
+
+  /* spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+  /* ── Vertical picker ── */
+  .picker-heading {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+  .picker-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .v-general {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    margin-bottom: 16px;
+  }
+  .v-general:hover { border-color: rgba(79,70,229,0.5); }
+  .v-general.selected { border-color: var(--brand); background: rgba(79,70,229,0.08); }
+  .v-icon { font-size: 26px; flex-shrink: 0; }
+  .v-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; color: #fff; }
+  .v-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .v-section-label {
+    font-size: 10px;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .v-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .v-card {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 11px;
+    padding: 13px 14px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .v-card:hover { border-color: rgba(79,70,229,0.5); }
+  .v-card.selected { border-color: var(--brand); background: rgba(79,70,229,0.08); }
+  .v-card .v-icon { font-size: 18px; margin-top: 1px; }
+  .v-card .v-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; color: #fff; }
+  .v-card .v-desc { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+
+  .continue-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--brand);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+    margin-bottom: 32px;
+  }
+  .continue-btn:hover { background: var(--brand-glow); }
+  .continue-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* fade-in on load */
+  @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  .wrap > * { animation: fadeUp 0.5s ease both; }
+  .logo { animation-delay: 0s; }
+  .headline { animation-delay: 0.05s; }
+  .subtext { animation-delay: 0.1s; }
+  .steps { animation-delay: 0.12s; }
+  .platforms { animation-delay: 0.15s; }
+  .code-box { animation-delay: 0.2s; }
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<a href="#main" class="skip-link">Skip to main content</a>
+  <div class="logo">
+    <div class="logo-mark">α</div>
+    <div class="logo-text">AlphaBoost</div>
+  </div>
 
-<header class="header">
-  <div class="brand" aria-label="AlphaBoost">Alpha<span>Boost</span></div>
-  <div class="step-label" id="headerStepLabel" aria-live="polite" aria-atomic="true">Affiliate Setup</div>
-</header>
+  <h1 class="headline" id="headline">Connect your accounts, <span id="affiliateName">loading…</span></h1>
+  <p class="subtext">Takes about 2 minutes. Connect each platform once and we'll handle your daily posts automatically — with your affiliate code embedded in every caption.</p>
 
-<div class="progress-wrap">
-  <div class="progress-track" id="progressTrack" role="list" aria-label="Setup progress"></div>
+  <a id="walkthroughLink" href="#" target="_blank" rel="noopener" style="display:none;align-items:center;gap:10px;background:rgba(79,70,229,0.1);border:1px solid rgba(79,70,229,0.3);border-radius:10px;padding:12px 16px;margin-bottom:28px;text-decoration:none;transition:background 0.2s;">
+    <span style="font-size:22px;">▶</span>
+    <span>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#fff;">Watch the setup walkthrough</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px;">2 min video — how to connect your accounts</div>
+    </span>
+  </a>
+
+  <div class="steps">
+    <div class="step done">
+      <div class="step-num">✓</div>
+      Joined
+    </div>
+    <div class="step-divider"></div>
+    <div class="step active">
+      <div class="step-num">2</div>
+      Connect Accounts
+    </div>
+    <div class="step-divider"></div>
+    <div class="step" id="step3">
+      <div class="step-num">3</div>
+      You're Live
+    </div>
+  </div>
+
+  <div class="error-state" id="errorState"></div>
+
+  <!-- ── Step A: Vertical picker ── -->
+  <div id="verticalPicker">
+    <div class="picker-heading">What's your professional focus?</div>
+    <div class="picker-sub">We'll tailor your daily AI content to your audience.</div>
+
+    <div class="v-general" id="v-general" onclick="selectVertical('general')">
+      <div class="v-icon">🌐</div>
+      <div>
+        <div class="v-name">General AI</div>
+        <div class="v-desc">All industries — business, education, health, politics, global issues</div>
+      </div>
+    </div>
+
+    <div class="v-section-label">AI by Profession</div>
+    <div class="v-grid">
+      <div class="v-card" id="v-product-management" onclick="selectVertical('product-management')">
+        <div class="v-icon">📋</div>
+        <div><div class="v-name">Product Management</div><div class="v-desc">AI impacting PM roles & tools</div></div>
+      </div>
+      <div class="v-card" id="v-project-management" onclick="selectVertical('project-management')">
+        <div class="v-icon">📅</div>
+        <div><div class="v-name">Project Management</div><div class="v-desc">AI impacting project delivery</div></div>
+      </div>
+      <div class="v-card" id="v-cyber-security" onclick="selectVertical('cyber-security')">
+        <div class="v-icon">🔐</div>
+        <div><div class="v-name">Cyber Security</div><div class="v-desc">AI impacting security & threats</div></div>
+      </div>
+      <div class="v-card" id="v-legal" onclick="selectVertical('legal')">
+        <div class="v-icon">⚖️</div>
+        <div><div class="v-name">Legal</div><div class="v-desc">AI impacting law & compliance</div></div>
+      </div>
+      <div class="v-card" id="v-design" onclick="selectVertical('design')">
+        <div class="v-icon">🎨</div>
+        <div><div class="v-name">Design</div><div class="v-desc">AI impacting UX & creative work</div></div>
+      </div>
+      <div class="v-card" id="v-software-engineering" onclick="selectVertical('software-engineering')">
+        <div class="v-icon">💻</div>
+        <div><div class="v-name">Software Engineering</div><div class="v-desc">AI impacting developers</div></div>
+      </div>
+      <div class="v-card" id="v-software-qa" onclick="selectVertical('software-qa')">
+        <div class="v-icon">🧪</div>
+        <div><div class="v-name">Software QA</div><div class="v-desc">AI impacting testing & quality</div></div>
+      </div>
+      <div class="v-card" id="v-data-analytics" onclick="selectVertical('data-analytics')">
+        <div class="v-icon">📊</div>
+        <div><div class="v-name">Data & Analytics</div><div class="v-desc">AI impacting data science & BI</div></div>
+      </div>
+    </div>
+
+    <button class="continue-btn" id="continueBtn" onclick="saveVertical()" disabled>Choose a focus to continue →</button>
+  </div>
+
+  <!-- ── Step B: Platform connections ── -->
+  <div id="platformSection" style="display:none">
+    <div class="success-banner" id="successBanner">
+      <div class="icon">🎉</div>
+      <h3>You're all set!</h3>
+      <p>Your accounts are connected. Daily content will start posting automatically tomorrow morning.</p>
+    </div>
+
+    <div class="platforms" id="platformList">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+
+  <div class="code-box" id="codeBox" style="display:none">
+    <div class="code-label">Your Affiliate Code</div>
+    <div class="code-value" id="codeDisplay"></div>
+    <div id="discountBadge" style="display:none;font-size:12px;color:var(--success);background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:8px 12px;margin-bottom:10px"></div>
+    <div class="ref-link">
+      <code id="refLinkText"></code>
+      <button class="copy-link-btn" onclick="copyRefLink()">Copy</button>
+    </div>
+  </div>
+
 </div>
 
-<main class="main" id="main" role="main"></main>
-
-<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span>✓</span>
+  <span id="toastMsg"></span>
+</div>
 
 <script>
-const STEPS = ['Resume','Profile','Channels','Content','Done'];
-const CHANNELS = ['linkedin','twitter','facebook','instagram','reddit','discord','telegram','slack','youtube'];
+// ── Walkthrough video — set to Zoho file ID once uploaded, or null to hide ───
+const WALKTHROUGH_FILE_ID = null; // e.g. 'abc123zohofileid'
 
-// Read token from URL
-const token = new URLSearchParams(location.search).get('token') || '';
-const affiliateCode = (() => {
-  try { return JSON.parse(atob(token.split('.')[1])).affiliateCode || ''; } catch { return ''; }
-})();
-
-// Store v2 JWT in localStorage so affiliate.html can pick it up
-if (token) {
-  try { localStorage.setItem('v2_affiliate_token', token); } catch(_) {}
+if (WALKTHROUGH_FILE_ID) {
+  const link = document.getElementById('walkthroughLink');
+  link.href = `/api/zoho/download/${WALKTHROUGH_FILE_ID}`;
+  link.style.display = 'flex';
 }
 
-const API = '/v2/api/affiliate/' + affiliateCode;
-
-let state = {
-  step: 0,
-  resumeJobId: null,
-  resumeStatus: null,
-  profile: {
-    role: '', seniority: '', industries: [], skills: [],
-    authoritySignal: '', painPoint: '',
-    directness: 0.6, provocation: 0.3, humor: 0.2,
-    ctaStrength: 'soft', desiredEmotion: 'curiosity',
-    goal: 'signups', format: 'framework', voice: 'operator',
-    controversy: 'balanced', platforms: ['linkedin'],
-    confidence: 0.5
+// ── Platform definitions ──────────────────────────────────────────────────────
+const PLATFORMS = [
+  {
+    id: 'linkedin',
+    name: 'LinkedIn',
+    desc: 'Posts to your personal feed + company page',
+    color: '#0A66C2',
+    icon: `<svg viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>`
   },
-  channels: ['linkedin'],
-  contentRuns: [],
-  activeChannel: 'linkedin',
-  generatingContent: false,
-  skillInput: '',
-  industryInput: '',
-};
-
-// ── Utilities ───────────────────────────────────────────────────────────────
-
-function toast(msg, type = 'ok') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'toast show ' + type;
-  setTimeout(() => el.className = 'toast', 3500);
-}
-
-async function apiFetch(path, opts = {}) {
-  const res = await fetch(path, {
-    ...opts,
-    headers: {
-      'Authorization': 'Bearer ' + token,
-      'Content-Type': 'application/json',
-      ...(opts.headers || {}),
-    },
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error?.message || 'Request failed');
-  return data;
-}
-
-function idempotencyKey() {
-  return 'idem-' + Date.now() + '-' + Math.random().toString(36).slice(2);
-}
-
-// ── Progress bar ─────────────────────────────────────────────────────────────
-
-function renderProgress() {
-  const track = document.getElementById('progressTrack');
-  let html = '';
-  STEPS.forEach((name, i) => {
-    const cls = i < state.step ? 'done' : i === state.step ? 'active' : 'pending';
-    const label = i < state.step ? `${name} — completed` : i === state.step ? `${name} — current step` : `${name} — upcoming`;
-    if (i > 0) html += `<div class="step-line ${i <= state.step ? 'done' : ''}" role="presentation"></div>`;
-    html += `<div class="step-bubble ${cls}" role="listitem" aria-label="${label}">${i < state.step ? '✓' : i + 1}</div>`;
-  });
-  track.innerHTML = html;
-
-  // Step names row
-  let namesHtml = '<div class="step-names">';
-  STEPS.forEach((name, i) => {
-    const cls = i < state.step ? 'done' : i === state.step ? 'active' : '';
-    namesHtml += `<div style="flex:1;text-align:${i===0?'left':i===STEPS.length-1?'right':'center'};font-size:11px;font-family:'DM Mono',monospace;color:${i===state.step?'#00C8FF':i<state.step?'#22C55E':'#64748B'}">${name}</div>`;
-  });
-  namesHtml += '</div>';
-  track.insertAdjacentHTML('afterend', namesHtml.replace(/<div class="step-names">.*<\/div>/, namesHtml));
-
-  document.getElementById('headerStepLabel').textContent = `Step ${state.step + 1} of ${STEPS.length} — ${STEPS[state.step]}`;
-}
-
-// ── Render router ─────────────────────────────────────────────────────────────
-
-function render() {
-  renderProgress();
-  const main = document.getElementById('main');
-  switch (state.step) {
-    case 0: main.innerHTML = renderResume(); bindResume(); break;
-    case 1: main.innerHTML = renderProfile(); bindProfile(); break;
-    case 2: main.innerHTML = renderChannels(); bindChannels(); break;
-    case 3: main.innerHTML = renderContent(); bindContent(); break;
-    case 4: main.innerHTML = renderDone(); break;
+  {
+    id: 'facebook',
+    name: 'Facebook & Instagram',
+    desc: 'Posts to your Facebook Page + Instagram Business',
+    color: '#1877F2',
+    icon: `<svg viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`
+  },
+  {
+    id: 'twitter',
+    name: 'X / Twitter',
+    desc: 'Posts to your X profile daily',
+    color: '#14171A',
+    icon: `<svg viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`
+  },
+  {
+    id: 'youtube',
+    name: 'YouTube',
+    desc: 'Publishes weekly video content to your channel',
+    color: '#FF0000',
+    icon: `<svg viewBox="0 0 24 24" fill="white"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`
+  },
+  {
+    id: 'reddit',
+    name: 'Reddit',
+    desc: 'Posts to relevant career & AI subreddits',
+    color: '#FF4500',
+    icon: `<svg viewBox="0 0 24 24" fill="white"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>`
   }
-}
+];
 
-// ── Step 0: Resume ────────────────────────────────────────────────────────────
+// ── State ─────────────────────────────────────────────────────────────────────
+let affiliateCode      = null;
+let connectedPlatforms = new Set();
+let selectedVerticals  = new Set();
 
-function renderResume() {
-  const uploaded = state.resumeStatus === 'done';
-  const processing = state.resumeStatus === 'processing' || state.resumeStatus === 'queued';
-  return `
-  <div class="card">
-    <div class="card-title">Upload Your Resume</div>
-    <div class="card-sub">We'll use your resume to personalise your AlphaBoost content — so your posts sound like you, not a template.</div>
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  affiliateCode = params.get('code');
+  const justConnected = params.get('connected');
 
-    <div class="consent-box">
-      <strong>Privacy notice:</strong> By uploading your resume, you consent to Alphaboost storing and processing it solely to build your personalised affiliate profile. You may review, edit, or delete this data at any time.
-    </div>
-
-    <div class="upload-zone ${uploaded ? 'uploaded' : ''}" id="uploadZone" role="button" tabindex="0" aria-label="Upload resume — click or press Enter to browse files" onclick="document.getElementById('fileInput').click()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('fileInput').click()}" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleDrop(event)">
-      <input type="file" id="fileInput" accept=".pdf,.docx" style="display:none" aria-label="Resume file — PDF or DOCX" onchange="handleFile(this.files[0])">
-      <div class="upload-icon">${uploaded ? '✅' : '📄'}</div>
-      <div class="upload-title">${uploaded ? 'Resume uploaded!' : 'Drop your resume here'}</div>
-      <div class="upload-sub">${uploaded ? state.resumeFileName : 'PDF or DOCX · Max 10 MB · Click or drag to upload'}</div>
-    </div>
-
-    ${processing ? `<div style="margin-top:16px;text-align:center"><span class="status-pill processing"><span class="pulse"></span> Analysing your resume<span class="loading-dots"></span></span></div>` : ''}
-    ${uploaded ? `<div style="margin-top:16px;text-align:center"><span class="status-pill done">✓ Profile extracted from resume</span></div>` : ''}
-
-    <div class="btn-row">
-      <div></div>
-      <div style="display:flex;gap:10px">
-        <button class="btn btn-ghost" onclick="skipResume()">Skip — fill manually</button>
-        <button class="btn btn-primary" id="resumeNextBtn" ${!uploaded ? 'disabled' : ''} onclick="goStep(1)">Continue →</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-function bindResume() {}
-
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('uploadZone').classList.remove('drag');
-  const file = e.dataTransfer.files[0];
-  if (file) handleFile(file);
-}
-
-async function handleFile(file) {
-  if (!file) return;
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (!['pdf','docx'].includes(ext)) { toast('Only PDF or DOCX files accepted', 'err'); return; }
-  if (file.size > 10 * 1024 * 1024) { toast('File must be under 10 MB', 'err'); return; }
-
-  state.resumeFileName = file.name;
-  const zone = document.getElementById('uploadZone');
-  zone.innerHTML = `<div class="upload-icon">⏳</div><div class="upload-title">Uploading<span class="loading-dots"></span></div><div class="upload-sub">${file.name}</div>`;
-
-  const formData = new FormData();
-  formData.append('resume', file);
+  if (!affiliateCode) {
+    showError('No affiliate code found in the URL. Please use the link that was sent to you.');
+    document.getElementById('headline').textContent = 'Invalid link';
+    return;
+  }
 
   try {
-    const res = await fetch(API + '/upload-resume', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'X-Idempotency-Key': idempotencyKey() },
-      body: formData,
-    });
+    const res = await fetch(`/api/affiliate/${affiliateCode}`);
+    if (!res.ok) throw new Error('Affiliate not found');
     const data = await res.json();
-    if (!res.ok) throw new Error(data?.error?.message || 'Upload failed');
 
-    state.resumeJobId = data.jobId;
-    state.resumeStatus = 'queued';
-    render();
-    pollResumeStatus();
-  } catch (err) {
-    toast(err.message, 'err');
-    render();
-  }
-}
-
-async function pollResumeStatus() {
-  if (!state.resumeJobId) return;
-  try {
-    const data = await apiFetch(API + '/upload-status/' + state.resumeJobId);
-    state.resumeStatus = data.status;
-    if (data.status === 'done') {
-      // Fetch autofill suggestions
-      try {
-        const fill = await apiFetch(API + '/profile/autofill', { method: 'POST' });
-        if (fill.autofilled && fill.suggested) {
-          const s = fill.suggested;
-          state.profile = {
-            ...state.profile,
-            role: s.role || '',
-            seniority: s.seniority || '',
-            industries: s.industries || [],
-            skills: s.skills || [],
-            authoritySignal: s.authoritySignal || '',
-            painPoint: s.painPoint || '',
-            directness: s.directness ?? 0.6,
-            provocation: s.provocation ?? 0.3,
-          };
-        }
-      } catch {}
-      render();
-    } else if (data.status === 'failed') {
-      state.resumeStatus = 'failed';
-      toast('Resume analysis failed — you can fill in your profile manually', 'err');
-      render();
-    } else {
-      setTimeout(pollResumeStatus, 3000);
+    document.getElementById('affiliateName').textContent = data.name.split(' ')[0] + '!';
+    // Show tier-appropriate discount badge
+    const tier = data.tier || 1;
+    const price = tier === 2 ? '$49' : '$39';
+    const saving = tier === 2 ? '$10 off' : '$20 off';
+    const discountBadge = document.getElementById('discountBadge');
+    if (discountBadge) {
+      discountBadge.textContent = `Your code gives ${saving} — customers pay ${price}/month`;
+      discountBadge.style.display = 'block';
     }
-  } catch {
-    setTimeout(pollResumeStatus, 5000);
-  }
-}
+    connectedPlatforms = new Set(data.connectedPlatforms || []);
 
-function skipResume() {
-  state.resumeStatus = null;
-  goStep(1);
-}
+    // Show code box
+    document.getElementById('codeBox').style.display = 'block';
+    document.getElementById('codeDisplay').textContent = affiliateCode;
+    document.getElementById('refLinkText').textContent = `alphaboost.app?ref=${affiliateCode}`;
 
-// ── Step 1: Profile ───────────────────────────────────────────────────────────
+    const savedVerticals = data.verticals || (data.vertical ? [data.vertical] : []);
+    if (savedVerticals.length > 0) {
+      // Already picked verticals — go straight to platform connections
+      showPlatformSection();
+    } else {
+      // Show vertical picker first
+      document.getElementById('verticalPicker').style.display = 'block';
+    }
 
-function renderProfile() {
-  const p = state.profile;
-  const seniorityOpts = ['','Junior','Mid-level','Senior','Lead','Principal','Director','VP','C-Suite'].map(o =>
-    `<option value="${o}" ${p.seniority===o?'selected':''}>${o||'Select...'}</option>`).join('');
-  const ctaOpts = ['invisible','soft','direct','strong'].map(o =>
-    `<option value="${o}" ${p.ctaStrength===o?'selected':''}>${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join('');
-  const emotionOpts = ['curiosity','inspiration','urgency','trust','fomo'].map(o =>
-    `<option value="${o}" ${p.desiredEmotion===o?'selected':''}>${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join('');
+    // Toast if just returned from OAuth
+    if (justConnected) {
+      const p = PLATFORMS.find(p => p.id === justConnected);
+      if (p) showToast(`${p.name} connected successfully!`);
+      window.history.replaceState({}, '', `/connect?code=${affiliateCode}`);
+    }
 
-  return `
-  <div class="card">
-    <div class="card-title">Your Professional Profile</div>
-    <div class="card-sub">${state.resumeStatus==='done' ? '✨ Pre-filled from your resume — review and adjust anything.' : 'Tell us about yourself so your content sounds authentic.'}</div>
+    checkAllConnected();
 
-    <div class="field-row">
-      <div class="field">
-        <label for="pRole">Job Title / Role</label>
-        <input type="text" id="pRole" value="${p.role}" placeholder="e.g. Product Manager" oninput="state.profile.role=this.value">
-      </div>
-      <div class="field">
-        <label for="pSeniority">Seniority Level</label>
-        <select id="pSeniority" onchange="state.profile.seniority=this.value">${seniorityOpts}</select>
-      </div>
-    </div>
-
-    <div class="field">
-      <label for="industryInput">Industries (add up to 5)</label>
-      <div class="tag-input-wrap">
-        <input type="text" id="industryInput" placeholder="e.g. SaaS, FinTech..." aria-label="Enter an industry and press Enter or Add" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag('industries','industryInput')}">
-        <button onclick="addTag('industries','industryInput')" aria-label="Add industry">+ Add</button>
-      </div>
-      <div class="tags" id="industriesTags" role="group" aria-label="Selected industries">${renderTags(p.industries,'industries')}</div>
-    </div>
-
-    <div class="field">
-      <label for="skillInput">Key Skills (add up to 10)</label>
-      <div class="tag-input-wrap">
-        <input type="text" id="skillInput" placeholder="e.g. Go-to-market, AI strategy..." aria-label="Enter a skill and press Enter or Add" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag('skills','skillInput')}">
-        <button onclick="addTag('skills','skillInput')" aria-label="Add skill">+ Add</button>
-      </div>
-      <div class="tags" id="skillsTags" role="group" aria-label="Selected skills">${renderTags(p.skills,'skills')}</div>
-    </div>
-
-    <div class="field">
-      <label for="pAuthority">Authority Signal <span style="color:#94A3B8;font-weight:400;text-transform:none">(What gives you credibility?)</span></label>
-      <input type="text" id="pAuthority" value="${p.authoritySignal}" placeholder="e.g. 10 years in enterprise SaaS, built 3 products..." oninput="state.profile.authoritySignal=this.value">
-    </div>
-
-    <div class="field">
-      <label for="pPain">Biggest Pain Point You Help With</label>
-      <input type="text" id="pPain" value="${p.painPoint}" placeholder="e.g. landing a senior role without a recruiter..." oninput="state.profile.painPoint=this.value">
-    </div>
-
-    <div style="border-top:1px solid #1E2D42;margin:24px 0;padding-top:24px">
-      <div style="font-family:'DM Mono',monospace;font-size:12px;color:#94A3B8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:20px">Content Tone Settings</div>
-
-      <div class="field">
-        <label>Directness <span style="color:#94A3B8;font-weight:400;text-transform:none;font-size:11px">(how straight-talking your content is)</span></label>
-        <div class="slider-wrap">
-          <span style="font-size:12px;color:#94A3B8">Gentle</span>
-          <input type="range" min="0" max="1" step="0.05" value="${p.directness}" aria-label="Directness: from Gentle to Bold" aria-valuetext="${Math.round(p.directness*100)}%" oninput="state.profile.directness=parseFloat(this.value);document.getElementById('directnessVal').textContent=Math.round(this.value*100)+'%';this.setAttribute('aria-valuetext',Math.round(this.value*100)+'%')">
-          <span class="slider-val" id="directnessVal">${Math.round(p.directness*100)}%</span>
-          <span style="font-size:12px;color:#94A3B8">Bold</span>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>Provocation <span style="color:#94A3B8;font-weight:400;text-transform:none;font-size:11px">(how much you challenge conventional thinking)</span></label>
-        <div class="slider-wrap">
-          <span style="font-size:12px;color:#94A3B8">Safe</span>
-          <input type="range" min="0" max="1" step="0.05" value="${p.provocation}" aria-label="Provocation: from Safe to Bold" aria-valuetext="${Math.round(p.provocation*100)}%" oninput="state.profile.provocation=parseFloat(this.value);document.getElementById('provocationVal').textContent=Math.round(this.value*100)+'%';this.setAttribute('aria-valuetext',Math.round(this.value*100)+'%')">
-          <span class="slider-val" id="provocationVal">${Math.round(p.provocation*100)}%</span>
-          <span style="font-size:12px;color:#94A3B8">Bold</span>
-        </div>
-      </div>
-
-      <div class="field-row">
-        <div class="field">
-          <label for="pCtaStrength">CTA Strength</label>
-          <select id="pCtaStrength" onchange="state.profile.ctaStrength=this.value">${ctaOpts}</select>
-        </div>
-        <div class="field">
-          <label for="pDesiredEmotion">Desired Emotion</label>
-          <select id="pDesiredEmotion" onchange="state.profile.desiredEmotion=this.value">${emotionOpts}</select>
-        </div>
-      </div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn btn-ghost" onclick="goStep(0)">← Back</button>
-      <button class="btn btn-primary" onclick="saveProfile()">Save & Continue →</button>
-    </div>
-  </div>`;
-}
-
-function renderTags(arr, field) {
-  return arr.map(t => `<span class="tag selected" role="button" tabindex="0" aria-label="Remove ${t}" onclick="removeTag('${field}','${t}')" onkeydown="if(event.key==='Enter'||event.key===' '||event.key==='Delete'||event.key==='Backspace'){event.preventDefault();removeTag('${field}','${t}')}">${t} ×</span>`).join('');
-}
-
-function addTag(field, inputId) {
-  const input = document.getElementById(inputId);
-  const val = input.value.trim();
-  if (!val) return;
-  const max = field === 'industries' ? 5 : 10;
-  if (state.profile[field].length >= max) { toast(`Max ${max} ${field}`, 'err'); return; }
-  if (!state.profile[field].includes(val)) {
-    state.profile[field].push(val);
-    document.getElementById(field + 'Tags').innerHTML = renderTags(state.profile[field], field);
-  }
-  input.value = '';
-}
-
-function removeTag(field, val) {
-  state.profile[field] = state.profile[field].filter(t => t !== val);
-  document.getElementById(field + 'Tags').innerHTML = renderTags(state.profile[field], field);
-}
-
-function bindProfile() {}
-
-async function saveProfile() {
-  try {
-    await apiFetch(API + '/profile', {
-      method: 'POST',
-      headers: { 'X-Idempotency-Key': idempotencyKey() },
-      body: JSON.stringify(state.profile),
-    });
-    toast('Profile saved ✓');
-    goStep(2);
   } catch (err) {
-    toast(err.message, 'err');
+    showError('We couldn\'t find your affiliate account. Double-check the link or contact AlphaBoost support.');
+    document.getElementById('headline').textContent = 'Link not found';
   }
 }
 
-// ── Step 2: Channels ──────────────────────────────────────────────────────────
-
-function renderChannels() {
-  const icons = {linkedin:'💼',twitter:'🐦',facebook:'📘',instagram:'📸',reddit:'🤝',discord:'💬',telegram:'✈️',slack:'🔧',youtube:'▶️'};
-  return `
-  <div class="card">
-    <div class="card-title">Choose Your Channels</div>
-    <div class="card-sub">Select the platforms you actively post on. We'll generate personalised content for each one.</div>
-
-    <div class="tags" style="gap:12px">
-      ${CHANNELS.map(ch => {
-        const selected = state.channels.includes(ch);
-        return `<span class="tag ${selected?'selected':''}" style="padding:10px 18px;font-size:14px" role="checkbox" aria-checked="${selected}" tabindex="0" onclick="toggleChannel('${ch}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleChannel('${ch}')}">${icons[ch]} ${ch.charAt(0).toUpperCase()+ch.slice(1)}</span>`;
-      }).join('')}
-    </div>
-
-    <div style="margin-top:20px;padding:14px 16px;background:rgba(0,200,255,0.06);border:1px solid rgba(0,200,255,0.15);border-radius:10px;font-size:13px;color:#94A3B8">
-      Selected: <strong style="color:#00C8FF">${state.channels.length}</strong> channel${state.channels.length!==1?'s':''} — we'll generate ${state.channels.length} piece${state.channels.length!==1?'s':''} of content
-    </div>
-
-    <div class="btn-row">
-      <button class="btn btn-ghost" onclick="goStep(1)">← Back</button>
-      <button class="btn btn-primary" ${state.channels.length===0?'disabled':''} onclick="goStep(3);generateContent()">Generate Content →</button>
-    </div>
-  </div>`;
-}
-
-function toggleChannel(ch) {
-  if (state.channels.includes(ch)) {
-    state.channels = state.channels.filter(c => c !== ch);
+// ── Vertical picker ───────────────────────────────────────────────────────────
+function selectVertical(id) {
+  const el = document.getElementById('v-' + id);
+  if (selectedVerticals.has(id)) {
+    selectedVerticals.delete(id);
+    el.classList.remove('selected');
   } else {
-    state.channels.push(ch);
+    selectedVerticals.add(id);
+    el.classList.add('selected');
   }
-  render();
+  const btn = document.getElementById('continueBtn');
+  if (selectedVerticals.size === 0) {
+    btn.disabled = true;
+    btn.textContent = 'Choose a focus to continue →';
+  } else if (selectedVerticals.size === 1) {
+    btn.disabled = false;
+    btn.textContent = 'Continue with 1 category →';
+  } else {
+    btn.disabled = false;
+    btn.textContent = `Continue with ${selectedVerticals.size} categories →`;
+  }
 }
 
-function bindChannels() {}
-
-// ── Step 3: Content ───────────────────────────────────────────────────────────
-
-function renderContent() {
-  const generating = state.generatingContent;
-  const runs = state.contentRuns;
-  const activeRun = runs.find(r => r.channel === state.activeChannel);
-
-  return `
-  <div class="card">
-    <div class="card-title">Your Personalised Content</div>
-    <div class="card-sub">Content generated specifically for you, based on your profile and tone settings. Review and dispatch each post.</div>
-
-    ${generating ? `
-      <div style="text-align:center;padding:40px 0">
-        <div style="font-size:40px;margin-bottom:16px">⚡</div>
-        <div style="font-family:'Syne',sans-serif;font-size:18px;margin-bottom:8px">Generating your content<span class="loading-dots"></span></div>
-        <div style="font-size:13px;color:#94A3B8">Personalising for ${state.channels.length} channel${state.channels.length!==1?'s':''}...</div>
-      </div>` : `
-
-    <div class="channel-tabs">
-      ${runs.map(r => `
-        <div class="ch-tab ${r.channel===state.activeChannel?'active':''}" role="tab" tabindex="0" aria-selected="${r.channel===state.activeChannel}" aria-label="${r.channel}${r.status==='dispatched'?' (dispatched)':''}" onclick="state.activeChannel='${r.channel}';render()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();state.activeChannel='${r.channel}';render()}">
-          ${r.channel} ${r.status==='dispatched'?'✓':''}
-        </div>`).join('')}
-    </div>
-
-    ${activeRun ? `
-      <div class="content-box" id="contentBox" contenteditable="true">${activeRun.outputContent || ''}</div>
-      <div style="font-size:12px;color:#94A3B8;margin-top:8px">You can edit this directly before dispatching.</div>
-      <div class="content-actions">
-        <button onclick="copyContent()">📋 Copy</button>
-        <button onclick="regenerate('${activeRun.channel}')">🔄 Regenerate</button>
-        <button class="dispatch" onclick="dispatchContent('${activeRun.id}')">
-          ${activeRun.status==='dispatched' ? '✓ Dispatched' : '🚀 Dispatch to Review'}
-        </button>
-      </div>` : `
-      <div style="text-align:center;padding:32px;color:#94A3B8">Select a channel above</div>`}
-    `}
-
-    <div class="btn-row">
-      <button class="btn btn-ghost" onclick="goStep(2)">← Back</button>
-      <button class="btn btn-green" onclick="goStep(4)">Finish Setup ✓</button>
-    </div>
-  </div>`;
-}
-
-function bindContent() {}
-
-async function generateContent() {
-  state.generatingContent = true;
-  state.contentRuns = [];
-  render();
-
+async function saveVertical() {
+  if (selectedVerticals.size === 0) return;
+  const btn = document.getElementById('continueBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
   try {
-    const data = await apiFetch(API + '/content/generate', {
+    const res = await fetch(`/api/affiliate/${affiliateCode}/vertical`, {
       method: 'POST',
-      headers: { 'X-Idempotency-Key': idempotencyKey() },
-      body: JSON.stringify({ channels: state.channels }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ verticals: [...selectedVerticals] }),
     });
-
-    // Fetch full run details
-    const runs = await Promise.all(
-      data.runs.map(r => apiFetch(API + '/content/' + r.runId).catch(() => ({ ...r, outputContent: '' })))
-    );
-    state.contentRuns = runs;
-    state.activeChannel = state.channels[0];
-  } catch (err) {
-    toast(err.message, 'err');
-  }
-
-  state.generatingContent = false;
-  render();
-}
-
-async function regenerate(channel) {
-  state.generatingContent = true;
-  render();
-  try {
-    const data = await apiFetch(API + '/content/generate', {
-      method: 'POST',
-      headers: { 'X-Idempotency-Key': idempotencyKey() },
-      body: JSON.stringify({ channels: [channel] }),
-    });
-    const run = await apiFetch(API + '/content/' + data.runs[0].runId).catch(() => ({}));
-    state.contentRuns = state.contentRuns.filter(r => r.channel !== channel).concat(run);
-    state.activeChannel = channel;
-  } catch (err) {
-    toast(err.message, 'err');
-  }
-  state.generatingContent = false;
-  render();
-}
-
-async function dispatchContent(runId) {
-  try {
-    await apiFetch(API + '/content/' + runId + '/dispatch', {
-      method: 'POST',
-      headers: { 'X-Idempotency-Key': idempotencyKey() },
-      body: JSON.stringify({}),
-    });
-    const run = state.contentRuns.find(r => r.id === runId);
-    if (run) run.status = 'dispatched';
-    toast('Sent for review ✓');
-    render();
-  } catch (err) {
-    toast(err.message, 'err');
+    if (!res.ok) throw new Error('Save failed');
+    document.getElementById('verticalPicker').style.display = 'none';
+    showPlatformSection();
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = `Continue with ${selectedVerticals.size} ${selectedVerticals.size === 1 ? 'category' : 'categories'} →`;
+    showError('Could not save your selection. Please try again.');
   }
 }
 
-function copyContent() {
-  const box = document.getElementById('contentBox');
-  if (box) {
-    navigator.clipboard.writeText(box.innerText).then(() => toast('Copied ✓'));
-  }
+function showPlatformSection() {
+  document.getElementById('platformSection').style.display = 'block';
+  renderPlatforms();
 }
 
-// ── Step 4: Done ──────────────────────────────────────────────────────────────
-
-function renderDone() {
-  return `
-  <div class="card">
-    <div class="success-hero">
-      <div class="success-icon">🎉</div>
-      <div class="success-title">You're all set!</div>
-      <div class="success-sub">Your profile is saved and your content has been sent for review. Once approved it will be posted to your social accounts automatically.</div>
-      <div style="margin-top:32px;display:flex;flex-direction:column;gap:12px;max-width:340px;margin-left:auto;margin-right:auto">
-        <div style="background:#111827;border:1px solid #1E2D42;border-radius:10px;padding:16px 20px;text-align:left">
-          <div style="font-size:12px;font-family:'DM Mono',monospace;color:#94A3B8;margin-bottom:4px">YOUR REF LINK</div>
-          <div style="font-size:14px;color:#00C8FF;word-break:break-all">https://alphaboost.app/ref/${affiliateCode}</div>
+// ── Render platforms ──────────────────────────────────────────────────────────
+function renderPlatforms() {
+  const list = document.getElementById('platformList');
+  list.innerHTML = PLATFORMS.map(p => {
+    const isConnected = connectedPlatforms.has(p.id);
+    return `
+      <div class="platform-card ${isConnected ? 'connected' : ''}" id="card-${p.id}">
+        <div class="platform-icon" style="background:${p.color}">
+          ${p.icon}
         </div>
-        <a href="/affiliate" class="btn btn-primary" style="width:100%;text-align:center;text-decoration:none">Go to my Dashboard →</a>
-        <button class="btn btn-ghost" style="width:100%" onclick="goStep(3)">Review Content First</button>
-        <button class="btn btn-ghost" style="width:100%;font-size:11px" onclick="goStep(0)">Update Profile</button>
+        <div class="platform-info">
+          <div class="platform-name">${p.name}</div>
+          <div class="platform-desc">${p.desc}</div>
+        </div>
+        ${isConnected
+          ? `<button class="connect-btn done-btn"><span>✓</span> Connected</button>`
+          : `<button class="connect-btn idle" id="btn-${p.id}" onclick="startOAuth('${p.id}')">Connect →</button>`
+        }
       </div>
-    </div>
-  </div>`;
+    `;
+  }).join('');
 }
 
-// ── Navigation ────────────────────────────────────────────────────────────────
+// ── Start OAuth flow ──────────────────────────────────────────────────────────
+function startOAuth(platformId) {
+  const btn = document.getElementById(`btn-${platformId}`);
+  if (!btn) return;
 
-function goStep(n) {
-  state.step = n;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  render();
+  // Show loading state
+  btn.className = 'connect-btn loading';
+  btn.innerHTML = `<span class="spinner"></span>`;
+
+  // Small delay so user sees the spinner, then redirect
+  setTimeout(() => {
+    window.location.href = `/auth/${platformId}/start?affiliateCode=${affiliateCode}`;
+  }, 400);
 }
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
-
-if (!token) {
-  document.getElementById('main').innerHTML = `
-    <div class="card" style="text-align:center;padding:48px">
-      <div style="font-size:48px;margin-bottom:16px">🔒</div>
-      <div style="font-family:'Syne',sans-serif;font-size:22px;margin-bottom:8px">Access Required</div>
-      <div style="color:#94A3B8">This page requires a valid onboarding link. Please check your email from AlphaBoost.</div>
-    </div>`;
-} else {
-  render();
+// ── Check if all connected ────────────────────────────────────────────────────
+function checkAllConnected() {
+  const allDone = PLATFORMS.every(p => connectedPlatforms.has(p.id));
+  if (allDone) {
+    document.getElementById('successBanner').classList.add('show');
+    const step3 = document.getElementById('step3');
+    step3.classList.add('done');
+    step3.querySelector('.step-num').textContent = '✓';
+  }
 }
+
+// ── Copy referral link ────────────────────────────────────────────────────────
+function copyRefLink() {
+  const link = `https://alphaboost.app?ref=${affiliateCode}`;
+  navigator.clipboard.writeText(link).then(() => showToast('Referral link copied!'));
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── Error ─────────────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('errorState');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+// ── Run ───────────────────────────────────────────────────────────────────────
+init();
 </script>
 </body>
 </html>

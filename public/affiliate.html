@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AlphaBoost — Affiliate Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&family=DM+Mono&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#020617;color:#e2e8f0;font-family:'DM Sans',sans-serif;min-height:100vh}
+.header{background:#0f172a;border-bottom:1px solid #1e293b;padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.brand{font-family:'Syne',sans-serif;font-weight:800;font-size:17px}.brand span{color:#00C8FF}
+.tabs{display:flex;gap:0;border-bottom:1px solid #1e293b;background:#0d1424;padding:0 24px;overflow-x:auto;position:sticky;top:53px;z-index:100}
+.tab{padding:10px 18px;font-size:11px;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:.07em;cursor:pointer;border-bottom:2px solid transparent;color:#64748b;white-space:nowrap}
+.tab.active{color:#f1f5f9;border-bottom-color:#00C8FF}
+.tab:hover{color:#94a3b8}
+.main{max-width:960px;margin:0 auto;padding:24px 20px}
+.btn{padding:7px 14px;border-radius:6px;font-size:11px;font-weight:700;font-family:'Syne',sans-serif;letter-spacing:.05em;cursor:pointer;border:none;transition:all .2s}
+.btn:hover{opacity:.85}.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn-primary{background:#0284C7;color:#fff}
+.btn-green{background:#059669;color:#fff}
+.btn-ghost{background:#1e293b;color:#94a3b8}
+.btn-red{background:#dc2626;color:#fff}
+.btn-sm{padding:5px 10px;font-size:10px}
+
+/* Calendar */
+.week-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.week-nav{display:flex;align-items:center;gap:10px}
+.week-label{font-family:'Syne',sans-serif;font-size:15px;font-weight:800}
+.week-progress{flex:1;min-width:200px;background:#1e293b;border-radius:20px;height:6px;overflow:hidden}
+.week-progress-fill{height:100%;background:linear-gradient(90deg,#00C8FF,#0284C7);border-radius:20px;transition:width .4s}
+.week-progress-text{font-family:'DM Mono',monospace;font-size:10px;color:#94a3b8;margin-top:4px}
+.cal-grid{display:grid;grid-template-columns:80px repeat(7,1fr);gap:1px;background:#1e293b;border-radius:12px;overflow:hidden;margin-bottom:24px}
+.cal-head{background:#0d1424;padding:8px 6px;text-align:center;font-size:9px;font-family:'DM Mono',monospace;color:#64748b;letter-spacing:.08em}
+.cal-row-label{background:#0f172a;padding:8px 10px;display:flex;align-items:center;font-size:10px;font-weight:700;font-family:'Syne',sans-serif;color:#94a3b8;letter-spacing:.06em}
+.slot{background:#0f172a;padding:0;min-height:80px;cursor:pointer;transition:background .15s;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.slot:hover{background:#111827}
+.slot.empty{background:#090f1f}
+.slot.empty:hover{background:#0d1424}
+.slot-pill{position:absolute;top:5px;right:5px;font-family:'DM Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:20px;z-index:2}
+.sp-empty{background:#1e293b;color:#475569}
+.sp-draft{background:#2d2106;color:#fbbf24}
+.sp-submitted{background:#2e1065;color:#a78bfa}
+.sp-approved{background:#064e3b;color:#34d399}
+.sp-posted{background:#064e3b;color:#6ee7b7}
+.sp-written{background:#0c1a3b;color:#60a5fa}
+.slot-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;border-bottom:1px solid #1e293b}
+.slot-body{padding:6px 8px;flex:1;display:flex;flex-direction:column;gap:2px}
+.slot-time{font-family:'DM Mono',monospace;font-size:9px;color:#475569}
+.slot-preview{font-size:10px;color:#94a3b8;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.slot-wc{font-family:'DM Mono',monospace;font-size:9px;color:#334155;margin-top:auto}
+.slot-add{display:flex;align-items:center;justify-content:center;height:100%;min-height:80px;flex-direction:column;gap:4px}
+.slot-add-icon{font-size:18px;color:#1e3a5f;transition:color .15s}
+.slot-add-lbl{font-size:9px;font-family:'DM Mono',monospace;color:#1e293b;letter-spacing:.06em}
+.slot:hover .slot-add-icon{color:#00C8FF}
+.slot:hover .slot-add-lbl{color:#334155}
+.cal-head-today{background:#0d1e3b;color:#00C8FF}
+
+/* Slide panel */
+.panel-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300}
+.panel-overlay.open{display:block}
+.panel{position:fixed;right:0;top:0;bottom:0;width:min(520px,100vw);background:#0f172a;border-left:1px solid #1e293b;z-index:301;overflow-y:auto;transform:translateX(100%);transition:transform .3s}
+.panel.open{transform:none}
+.panel-head{padding:16px 20px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#0f172a;z-index:1}
+.panel-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:800}
+.panel-body{padding:20px}
+.panel-close{background:none;border:none;color:#64748b;font-size:20px;cursor:pointer;padding:4px}
+.panel-close:hover{color:#f1f5f9}
+
+/* Content editor */
+.editor-label{font-size:9px;font-family:'DM Mono',monospace;color:#64748b;letter-spacing:.1em;margin-bottom:6px}
+.editor-ta{width:100%;background:#020617;border:1px solid #1e293b;color:#e2e8f0;padding:12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;resize:vertical;min-height:140px;outline:none;line-height:1.6}
+.editor-ta:focus{border-color:#00C8FF}
+.char-row{display:flex;align-items:center;justify-content:space-between;margin-top:6px;margin-bottom:16px}
+.char-bar-wrap{flex:1;height:2px;background:#1e293b;border-radius:1px;margin-right:10px}
+.char-bar-fill{height:100%;border-radius:1px;transition:width .2s}
+.char-text{font-family:'DM Mono',monospace;font-size:10px}
+.char-ok{color:#34d399}.char-warn{color:#fbbf24}.char-over{color:#f87171}
+
+/* Status badge */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:9px;font-family:'DM Mono',monospace;font-weight:700;letter-spacing:.06em}
+.badge-draft{background:#2d2106;color:#fbbf24}
+.badge-submitted{background:#2e1065;color:#a78bfa}
+.badge-approved{background:#064e3b;color:#34d399}
+.badge-flagged{background:#450a0a;color:#f87171}
+.badge-generating{background:#0c1a3b;color:#60a5fa}
+
+/* Content card (My Content tab) */
+.run-card{background:#0f172a;border:1px solid #1e293b;border-radius:12px;margin-bottom:16px;overflow:hidden}
+.run-card.submitted{border-color:#7c3aed}.run-card.approved{border-color:#059669}
+.run-head{padding:12px 16px;border-bottom:1px solid #1e293b;display:flex;align-items:center;gap:10px}
+.run-platform{font-family:'Syne',sans-serif;font-weight:700;font-size:13px}
+.run-body{padding:14px 16px}
+.run-original{background:#090f1f;border:1px solid #1e293b;border-radius:8px;padding:11px;font-size:12px;color:#64748b;line-height:1.6;margin-bottom:10px}
+.run-original-label{font-size:9px;font-family:'DM Mono',monospace;color:#334155;margin-bottom:5px;letter-spacing:.08em}
+.run-edit-label{font-size:9px;font-family:'DM Mono',monospace;color:#1e40af;margin-bottom:5px;letter-spacing:.08em}
+.run-edit-box{background:#020617;border:1px solid #1e3a5f;border-radius:8px;padding:11px;font-size:12px;color:#93c5fd;line-height:1.6;margin-bottom:10px}
+.run-foot{padding:12px 16px;border-top:1px solid #1e293b;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* Media picker */
+.media-btn{padding:6px 12px;background:#1e293b;border:1px dashed #334155;color:#64748b;border-radius:6px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700}
+.media-btn:hover{border-color:#00C8FF;color:#00C8FF}
+.media-thumb{width:48px;height:48px;object-fit:cover;border-radius:6px;border:2px solid #1e293b;cursor:pointer}
+.media-thumb:hover{border-color:#00C8FF}
+.media-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.media-grid-item{width:72px;height:72px;object-fit:cover;border-radius:8px;border:2px solid #1e293b;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;background:#0d1424}
+.media-grid-item:hover{border-color:#00C8FF}.media-grid-item.selected{border-color:#00C8FF}
+
+/* Stats */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:16px;text-align:center}
+.stat-n{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#00C8FF}
+.stat-l{font-family:'DM Mono',monospace;font-size:10px;color:#475569;margin-top:4px;letter-spacing:.08em}
+
+/* Platform chips (Set Up tab) */
+.plat-chip{padding:5px 12px;border-radius:20px;font-size:11px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;border:1px solid #1e293b;color:#64748b;background:#0d1424}
+.plat-chip.on{border-color:#00C8FF;color:#00C8FF;background:rgba(0,200,255,.08)}
+
+/* Loading skeleton */
+@keyframes shimmer{0%{background-position:-800px 0}100%{background-position:800px 0}}
+.loading{display:flex;flex-direction:column;gap:12px;padding:28px 0}
+.skel{background:linear-gradient(90deg,#0f172a 25%,#1e293b 50%,#0f172a 75%);background-size:800px 100%;animation:shimmer 1.6s infinite linear;border-radius:8px}
+.skel-h{height:22px}.skel-p{height:13px}.skel-card{height:80px;border-radius:12px}
+.empty-state{text-align:center;padding:48px 20px;color:#334155;font-family:'DM Mono',monospace;font-size:13px}
+
+/* Tab bar scrollbar */
+.tabs::-webkit-scrollbar{height:3px}
+.tabs::-webkit-scrollbar-track{background:transparent}
+.tabs::-webkit-scrollbar-thumb{background:#1e293b;border-radius:2px}
+.tabs::-webkit-scrollbar-thumb:hover{background:#334155}
+
+/* Calendar scroll wrapper */
+.cal-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:24px}
+.cal-scroll .cal-grid{margin-bottom:0}
+
+/* Responsive */
+@media(max-width:640px){
+  .header{padding:10px 14px}
+  .brand{font-size:14px}
+  .hd-guide{display:none}
+  .hd-code-el{display:none}
+  .tabs{padding:0 10px;top:49px}
+  .tab{padding:8px 11px;font-size:10px;letter-spacing:.04em}
+  .main{padding:14px 12px}
+  .cal-grid{min-width:540px}
+  .profile-modal{left:10px;right:10px;width:auto;top:auto;bottom:0;border-radius:16px 16px 0 0}
+  .week-header{flex-direction:column;align-items:flex-start}
+  #tab-drag-hint{display:none !important}
+}
+@media(max-width:900px){
+  .calc-2col{grid-template-columns:1fr !important}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<style>
+/* ── Profile Modal ── */
+.profile-avatar-btn{width:34px;height:34px;border-radius:50%;border:2px solid #1e293b;background:#0d1424;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:16px;transition:border-color .15s;flex-shrink:0}
+.profile-avatar-btn:hover{border-color:#00C8FF}
+.profile-avatar-btn img{width:100%;height:100%;object-fit:cover}
+.profile-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.5);backdrop-filter:blur(2px)}
+.profile-overlay.open{display:block}
+.profile-modal{position:fixed;top:60px;right:20px;width:320px;background:#0f172a;border:1px solid #1e293b;border-radius:16px;z-index:501;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.profile-modal-head{padding:18px 20px 14px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between}
+.profile-modal-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:#f1f5f9}
+.profile-close{background:none;border:none;color:#475569;font-size:20px;cursor:pointer;padding:0;line-height:1}
+.profile-close:hover{color:#f1f5f9}
+.profile-modal-body{padding:20px}
+.profile-avatar-zone{width:80px;height:80px;border-radius:50%;border:2px dashed #1e293b;background:#020617;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:border-color .2s;position:relative}
+.profile-avatar-zone:hover{border-color:#00C8FF}
+.profile-avatar-zone img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.profile-avatar-zone .avatar-placeholder{font-size:28px;color:#334155}
+.profile-avatar-zone .avatar-hint{position:absolute;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;font-size:10px;color:#00C8FF;font-family:'DM Mono',monospace;opacity:0;transition:opacity .2s;border-radius:50%}
+.profile-avatar-zone:hover .avatar-hint{opacity:1}
+.profile-section-label{font-size:10px;font-family:'DM Mono',monospace;color:#475569;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+.profile-code-row{display:flex;align-items:center;gap:8px;background:#020617;border:1px solid #1e293b;border-radius:8px;padding:10px 14px;margin-bottom:16px}
+.profile-code-val{font-family:'DM Mono',monospace;font-size:15px;color:#00C8FF;font-weight:700;flex:1;letter-spacing:.08em}
+.profile-copy-btn{background:none;border:1px solid #1e293b;color:#64748B;font-size:11px;font-family:'DM Mono',monospace;padding:4px 10px;border-radius:5px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.profile-copy-btn:hover{border-color:#00C8FF;color:#00C8FF}
+.profile-download-btn{width:100%;padding:11px;background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.2);border-radius:8px;color:#00C8FF;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:.05em;cursor:pointer;transition:all .2s;margin-bottom:12px}
+.profile-download-btn:hover{background:rgba(0,200,255,0.15)}
+.profile-terms-link{display:block;text-align:center;font-size:11px;color:#475569;text-decoration:none;font-family:'DM Mono',monospace;transition:color .15s}
+.profile-terms-link:hover{color:#94a3b8}
+.profile-username{text-align:center;font-size:13px;color:#94a3b8;margin-bottom:18px;font-family:'DM Mono',monospace}
+</style>
+
+<div class="header">
+  <div class="brand"><span>ALPHA</span>BOOST <span style="color:#334155;font-size:13px;font-weight:400">/ Affiliate Hub</span></div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span id="hd-code" class="hd-code-el" style="font-family:'DM Mono',monospace;font-size:11px;color:#475569"></span>
+    <a href="/affiliate-setup-guide" class="hd-guide" style="padding:5px 12px;border-radius:6px;font-size:11px;font-weight:700;font-family:'Syne',sans-serif;background:#1d4ed8;color:#fff;text-decoration:none">Set-up Guide</a>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Log out</button>
+    <button class="profile-avatar-btn" id="profile-btn" onclick="openProfile()" title="My Profile">
+      <img id="profile-avatar-hd" src="" style="display:none"/>
+      <span id="profile-initials-hd">👤</span>
+    </button>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div class="profile-overlay" id="profile-overlay" onclick="closeProfile()"></div>
+<div class="profile-modal" id="profile-modal">
+  <div class="profile-modal-head">
+    <span class="profile-modal-title">My Profile</span>
+    <button class="profile-close" onclick="closeProfile()">✕</button>
+  </div>
+  <div class="profile-modal-body">
+    <!-- Avatar upload -->
+    <div class="profile-avatar-zone" id="avatar-zone" onclick="document.getElementById('avatar-input').click()">
+      <img id="profile-avatar-lg" src="" style="display:none"/>
+      <span id="profile-avatar-icon" class="avatar-placeholder">👤</span>
+      <div class="avatar-hint">Upload photo</div>
+    </div>
+    <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)"/>
+    <div class="profile-username" id="profile-username-label"></div>
+
+    <!-- Affiliate code -->
+    <div class="profile-section-label">Affiliate Code</div>
+    <div class="profile-code-row">
+      <span class="profile-code-val" id="modal-aff-code">—</span>
+      <button class="profile-copy-btn" onclick="copyCode()">Copy</button>
+    </div>
+
+    <!-- Download contract -->
+    <button class="profile-download-btn" onclick="downloadContract()">⬇ Download Affiliate Contract</button>
+
+    <!-- Terms link -->
+    <a class="profile-terms-link" href="/terms" target="_blank">View Terms &amp; Conditions →</a>
+  </div>
+</div>
+
+<!-- Tab bar (dynamically rendered by JS) -->
+<div class="tabs" id="tab-bar">
+  <div id="tab-drag-hint" style="display:none;align-items:center;padding:0 12px;font-size:10px;color:#334155;font-family:'DM Mono',monospace;letter-spacing:.06em;white-space:nowrap;flex-shrink:0">
+    ⠿ drag to reorder
+  </div>
+</div>
+<div style="background:#0d1424;border-bottom:1px solid #1e293b;padding:4px 24px;display:flex;align-items:center;justify-content:flex-end;gap:10px">
+  <button onclick="resetTabOrder()" style="background:none;border:none;font-size:10px;font-family:'DM Mono',monospace;color:#334155;cursor:pointer;letter-spacing:.06em;padding:4px 0;transition:color .15s" onmouseover="this.style.color='#64748B'" onmouseout="this.style.color='#334155'">↺ Reset tab order</button>
+</div>
+
+<!-- Main content -->
+<div class="main" id="main-content">
+  <div class="loading" id="loading-state">Loading…</div>
+</div>
+
+<!-- Slot slide panel -->
+<div class="panel-overlay" id="panel-overlay" onclick="closePanel()"></div>
+<div class="panel" id="slot-panel">
+  <div class="panel-head">
+    <div class="panel-title" id="panel-title">Slot</div>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</div>
+
+<!-- Media picker panel -->
+<div class="panel-overlay" id="media-overlay" onclick="closeMedia()"></div>
+<div class="panel" id="media-panel">
+  <div class="panel-head">
+    <div class="panel-title">Content Library</div>
+    <button class="panel-close" onclick="closeMedia()">✕</button>
+  </div>
+  <div class="panel-body" id="media-body">
+    <div id="media-filter" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="filterMedia('all')">All</button>
+      <button class="btn btn-ghost btn-sm" onclick="filterMedia('image')">Images</button>
+      <button class="btn btn-ghost btn-sm" onclick="filterMedia('video')">Video</button>
+    </div>
+    <div id="media-grid-inner" class="media-grid"></div>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+const V2 = 'http://localhost:3457';
+let affiliateCode = '';
+let v2Token = '';
+let currentTab = 'calendar';
+let affiliateTier = 1;
+let currentWeekStart = getMondayOf(new Date());
+let currentPlan = null;
+let mediaCallback = null;
+let allAssets = [];
+let currentSlotId = null;
+let currentRunId = null;
+
+const PLATFORM_LIMITS = { linkedin:3000, twitter:280, x:280, instagram:2200, facebook:63206, youtube:5000, tiktok:2200 };
+
+// ── v2 offline banner ─────────────────────────────────────────────────────────
+function v2OfflineBanner(context) {
+  return `<div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px">
+    <span style="font-size:20px;flex-shrink:0">⚠️</span>
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#fbbf24;margin-bottom:4px">Content service offline</div>
+      <div style="font-size:12px;color:#92400e;line-height:1.6">${context} requires the content service (port 3457). Ask your admin to start it, then refresh this tab.</div>
+    </div>
+  </div>`;
+}
+
+function isV2Error(e) {
+  return e?.message?.includes('fetch') || e?.message?.includes('Failed to fetch') || e?.message?.includes('NetworkError') || e?.message?.includes('ECONNREFUSED') || e?.message?.toLowerCase().includes('network');
+}
+const PLATFORM_LABELS = { linkedin:'LinkedIn', twitter:'X/Twitter', x:'X/Twitter', instagram:'Instagram', facebook:'Facebook', youtube:'YouTube', tiktok:'TikTok' };
+const PLATFORM_ICONS = { linkedin:'💼', twitter:'𝕏', x:'𝕏', instagram:'📸', facebook:'👥', youtube:'▶️', tiktok:'🎵' };
+
+function getMondayOf(d) {
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const m = new Date(d);
+  m.setDate(m.getDate() + diff);
+  m.setHours(0,0,0,0);
+  return m;
+}
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate()+n); return r; }
+function fmtDate(d) { return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+function fmtDateTime(d) { return new Date(d).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}); }
+function fmtWeek(mon) { return `${fmtDate(mon)} – ${fmtDate(addDays(mon,6))}`; }
+
+function V2H() {
+  return { 'Content-Type':'application/json', Authorization:`Bearer ${v2Token}` };
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+function logout() {
+  localStorage.removeItem('v2_affiliate_token');
+  localStorage.removeItem('vc_token');
+  localStorage.removeItem('vc_username');
+  window.location.href = '/';
+}
+
+function decodeJwtPayload(token) {
+  try {
+    const b64 = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    return JSON.parse(atob(b64));
+  } catch { return null; }
+}
+
+async function init() {
+  v2Token = localStorage.getItem('v2_affiliate_token') || '';
+  const v1Token = localStorage.getItem('vc_token') || '';
+  if (!v2Token) v2Token = v1Token;
+  if (!v2Token) { window.location.href = '/'; return; }
+
+  const payload = decodeJwtPayload(v2Token);
+  if (payload && payload.affiliateCode) {
+    affiliateCode = payload.affiliateCode;
+  } else {
+    // v1 session token — resolve affiliate info from server
+    try {
+      const me = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + v1Token } });
+      if (!me.ok) { window.location.href = '/'; return; }
+      const meData = await me.json();
+      if (!meData.affiliateCode) { window.location.href = '/'; return; }
+      affiliateCode = meData.affiliateCode;
+      affiliateTier = meData.tier || 1;
+    } catch(e) { window.location.href = '/'; return; }
+  }
+  document.getElementById('hd-code').textContent = affiliateCode;
+
+  // Load tier from server (refresh / JWT path)
+  if (!affiliateTier) {
+    try {
+      const me = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + v1Token } });
+      const meData = await me.json();
+      affiliateTier = meData.tier || parseInt(localStorage.getItem('vc_tier') || '1');
+    } catch(e) { affiliateTier = 1; }
+  }
+  localStorage.setItem('vc_tier', affiliateTier);
+
+  renderTabBar();
+
+  // First login → show Welcome tab; thereafter restore last visited tab
+  const firstLogin = !localStorage.getItem('has_logged_in_' + affiliateCode);
+  if (firstLogin) {
+    localStorage.setItem('has_logged_in_' + affiliateCode, '1');
+    switchTab('welcome');
+  } else {
+    const lastTab = localStorage.getItem('last_tab_' + affiliateCode) || 'calendar';
+    switchTab(lastTab);
+  }
+}
+
+// ── Tab definitions ───────────────────────────────────────────────────────────
+const DEFAULT_TABS = [
+  { id:'welcome',     label:'🏠 WELCOME',         phase: 3 },
+  { id:'setup',       label:'⚙️ SET UP',           phase: 4 },
+  { id:'calendar',    label:'📅 CALENDAR',         phase: 0 },
+  { id:'content',     label:'📝 MY CONTENT',       phase: 0 },
+  { id:'linkedin',    label:'💼 LINKEDIN',         phase: 6 },
+  { id:'facebook',    label:'👥 FACEBOOK',         phase: 6 },
+  { id:'instagram',   label:'📸 INSTAGRAM',        phase: 6 },
+  { id:'youtube',     label:'▶️ YOUTUBE',           phase: 6 },
+  { id:'twitter',     label:'𝕏 X / TWITTER',       phase: 6 },
+  { id:'reddit',      label:'🤖 REDDIT',           phase: 6 },
+  { id:'discord',     label:'🎮 DISCORD',          phase: 6 },
+  { id:'tiktok',      label:'🎵 TIKTOK',           phase: 6 },
+  { id:'earnings',    label:'📊 EARNINGS CALC',    phase: 7, tier1only: true },
+  { id:'performance', label:'📈 POST PERFORMANCE', phase: 8 },
+];
+
+function getTabOrder() {
+  try {
+    const saved = localStorage.getItem('tab_order');
+    if (saved) {
+      const order = JSON.parse(saved);
+      // Merge: keep saved order, add any new tabs not yet saved
+      const missing = DEFAULT_TABS.filter(t => !order.find(o => o.id === t.id));
+      return [...order, ...missing];
+    }
+  } catch(e) {}
+  return DEFAULT_TABS;
+}
+
+function saveTabOrder(tabs) {
+  localStorage.setItem('tab_order', JSON.stringify(tabs));
+}
+
+function resetTabOrder() {
+  localStorage.removeItem('tab_order');
+  renderTabBar();
+  switchTab('welcome');
+}
+
+// ── Tab bar renderer (drag-to-reorder) ───────────────────────────────────────
+function renderTabBar() {
+  const bar = document.getElementById('tab-bar');
+  const hint = document.getElementById('tab-drag-hint');
+  const tabs = getTabOrder().filter(t => {
+    if (t.tier1only && affiliateTier !== 1) return false;
+    return true;
+  });
+
+  // Clear existing tabs (keep hint)
+  bar.querySelectorAll('.tab').forEach(el => el.remove());
+  hint.style.display = 'flex';
+
+  let dragSrc = null;
+
+  tabs.forEach(tabDef => {
+    const el = document.createElement('div');
+    el.className = 'tab' + (tabDef.id === currentTab ? ' active' : '');
+    el.id = 'tab-' + tabDef.id;
+    el.textContent = tabDef.label;
+    el.draggable = true;
+    el.dataset.tabId = tabDef.id;
+
+    el.onclick = () => switchTab(tabDef.id);
+
+    // Drag events
+    el.addEventListener('dragstart', e => {
+      dragSrc = el;
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => el.style.opacity = '0.4', 0);
+    });
+    el.addEventListener('dragend', () => { el.style.opacity = ''; dragSrc = null; });
+    el.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+    el.addEventListener('dragenter', e => { e.preventDefault(); if (el !== dragSrc) el.style.borderBottomColor = '#00C8FF'; });
+    el.addEventListener('dragleave', () => { if (el !== dragSrc) el.style.borderBottomColor = ''; });
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      el.style.borderBottomColor = '';
+      if (!dragSrc || dragSrc === el) return;
+      const allTabs = [...bar.querySelectorAll('.tab')];
+      const srcIdx = allTabs.indexOf(dragSrc);
+      const tgtIdx = allTabs.indexOf(el);
+      if (srcIdx < tgtIdx) bar.insertBefore(dragSrc, el.nextSibling);
+      else bar.insertBefore(dragSrc, el);
+      dragSrc.style.opacity = '';
+      // Persist new order
+      const newOrder = [...bar.querySelectorAll('.tab')].map(t =>
+        tabs.find(td => td.id === t.dataset.tabId)
+      ).filter(Boolean);
+      saveTabOrder(newOrder);
+    });
+
+    bar.appendChild(el);
+  });
+}
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  if (affiliateCode) localStorage.setItem('last_tab_' + affiliateCode, tab);
+  document.querySelectorAll('#tab-bar .tab').forEach(t => t.classList.remove('active'));
+  const activeEl = document.getElementById('tab-' + tab);
+  if (activeEl) activeEl.classList.add('active');
+
+  if      (tab === 'welcome')      loadWelcome();
+  else if (tab === 'setup')        loadSetup();
+  else if (tab === 'calendar')     loadPlan();
+  else if (tab === 'content')      loadContent();
+  else if (tab === 'earnings')     loadEarningsCalc();
+  else if (tab === 'performance')  loadStats();
+  else if (['linkedin','facebook','instagram','youtube','twitter','reddit','discord','tiktok'].includes(tab)) loadChannels(tab);
+  else loadTabPlaceholder(tab);
+}
+
+function loadTabPlaceholder(tab) {
+  const tabDef = DEFAULT_TABS.find(t => t.id === tab);
+  const el = document.getElementById('main-content');
+  el.innerHTML = `
+    <div style="max-width:600px;margin:60px auto;text-align:center;padding:0 24px">
+      <div style="font-size:48px;margin-bottom:20px">${(tabDef?.label || '').split(' ')[0]}</div>
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#f1f5f9;margin-bottom:10px">
+        ${(tabDef?.label || tab).replace(/^[^\s]+\s/, '')}
+      </div>
+      <div style="font-size:14px;color:#475569;line-height:1.7;margin-bottom:24px">
+        This section is coming soon. It will be available in the next platform update.
+      </div>
+      <div style="display:inline-block;background:rgba(0,200,255,0.08);border:1px solid rgba(0,200,255,0.15);border-radius:20px;padding:6px 18px;font-size:11px;font-family:'DM Mono',monospace;color:#00C8FF;letter-spacing:.08em">
+        PHASE ${tabDef?.phase || '?'} — IN DEVELOPMENT
+      </div>
+    </div>`;
+}
+
+// ── MY PLAN (Calendar) ────────────────────────────────────────────────────────
+async function loadPlan() {
+  const el = document.getElementById('main-content');
+  el.innerHTML = '<div class="loading"><div class="skel skel-h" style="width:40%;margin-bottom:8px"></div><div class="skel skel-p" style="width:65%"></div><div class="skel skel-card" style="margin-top:16px"></div><div class="skel skel-card"></div></div>';
+  try {
+    const weekParam = currentWeekStart.toISOString().slice(0,10);
+    const r = await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/plan?week=${weekParam}`, { headers: V2H() });
+    const d = await r.json();
+    currentPlan = d.plan;
+    renderCalendar(currentPlan, currentWeekStart);
+  } catch(e) {
+    el.innerHTML = (isV2Error(e) ? v2OfflineBanner('The calendar') : '') + `<div class="empty-state">Failed to load plan: ${e.message}</div>`;
+  }
+}
+
+function renderCalendar(plan, weekStart) {
+  const slots = plan?.slots ?? [];
+  const dayNames = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  const dates = Array.from({length:7}, (_,i) => addDays(weekStart,i));
+
+  // Group slots by platform and day
+  const platforms = [...new Set(slots.map(s=>s.platform))];
+  if (!platforms.length) platforms.push('linkedin');
+
+  const slotMap = {};
+  slots.forEach(s => {
+    const d = new Date(s.scheduledDate);
+    const dayIdx = dates.findIndex(dd => dd.toDateString() === d.toDateString());
+    const key = `${s.platform}_${dayIdx}`;
+    slotMap[key] = s;
+  });
+
+  const filledCount = slots.filter(s => s.status !== 'empty').length;
+  const totalSlots = slots.length;
+
+  const todayStr = new Date().toDateString();
+
+  let html = `
+    <div class="week-header">
+      <div class="week-nav">
+        <button class="btn btn-ghost btn-sm" onclick="navWeek(-1)">← Prev</button>
+        <div class="week-label">Week of ${fmtWeek(weekStart)}</div>
+        <button class="btn btn-ghost btn-sm" onclick="navWeek(1)">Next →</button>
+      </div>
+      <div style="flex:1;min-width:200px">
+        <div class="week-progress"><div class="week-progress-fill" style="width:${totalSlots?Math.round(filledCount/totalSlots*100):0}%"></div></div>
+        <div class="week-progress-text">${filledCount} of ${totalSlots} slots filled</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="generateWeek()">✦ Generate All Empty</button>
+        <button class="btn btn-ghost btn-sm" onclick="switchTab('setup')">⚙ Set Up</button>
+      </div>
+    </div>
+
+    <div class="cal-scroll"><div class="cal-grid">
+      <div class="cal-head"></div>
+      ${dates.map((d,i) => {
+        const isToday = d.toDateString() === todayStr;
+        return `<div class="cal-head ${isToday?'cal-head-today':''}">${dayNames[i]}${isToday?' ◆':''}<br><span style="font-size:11px">${fmtDate(d)}</span></div>`;
+      }).join('')}
+  `;
+
+  for (const plat of platforms) {
+    html += `<div class="cal-row-label">${PLATFORM_ICONS[plat]??'•'} ${(PLATFORM_LABELS[plat]??plat).toUpperCase()}</div>`;
+    for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
+      const s = slotMap[`${plat}_${dayIdx}`];
+      if (!s) {
+        html += `<div class="slot empty" onclick="openNewSlot('${plat}','${dates[dayIdx].toISOString()}')"><div class="slot-add"><div class="slot-add-icon">＋</div><div class="slot-add-lbl">ADD</div></div></div>`;
+        continue;
+      }
+      const content  = s.contentRun?.editedContent ?? s.contentRun?.outputContent ?? s.manualContent ?? '';
+      const thumbUrl = s.contentRun?.mediaAsset?.url ?? s.mediaAsset?.url ?? '';
+      const wc       = content ? content.trim().split(/\s+/).length : 0;
+      const st       = s.status === 'empty' ? 'empty' : s.status;
+      const pillLabel = st === 'empty' ? 'DRAFT' : st.toUpperCase();
+
+      html += `<div class="slot" onclick="openSlot('${s.id}')">
+        <div class="slot-pill sp-${st}">${pillLabel}</div>
+        ${thumbUrl ? `<img class="slot-thumb" src="${thumbUrl}" alt="" loading="lazy">` : ''}
+        <div class="slot-body">
+          <div class="slot-time">${fmtDateTime(s.scheduledDate)}</div>
+          ${content
+            ? `<div class="slot-preview">${content.slice(0,80)}</div>
+               <div class="slot-wc">${wc}w</div>`
+            : `<div style="font-size:9px;color:#334155;font-family:'DM Mono',monospace;margin-top:4px">Tap to write</div>`}
+        </div>
+      </div>`;
+    }
+  }
+
+  html += '</div></div>'; // close cal-grid + cal-scroll
+
+  // Legend
+  html += `<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11px;font-family:'DM Mono',monospace;color:#475569;margin-top:8px">
+    ${[['draft','#fbbf24'],['submitted','#a78bfa'],['approved','#34d399'],['posted','#6ee7b7']].map(([l,c])=>`<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};margin-right:4px"></span>${l.toUpperCase()}</span>`).join('')}
+  </div>`;
+
+  document.getElementById('main-content').innerHTML = html;
+}
+
+async function openNewSlot(platform, isoDate) {
+  // Open the panel in "new slot" mode — just show the platform + date with a generate button
+  currentSlotId = null;
+  const plat = platform;
+  const dateLabel = fmtDate(new Date(isoDate));
+  document.getElementById('panel-title').textContent = `New — ${PLATFORM_LABELS[plat]??plat} · ${dateLabel}`;
+  document.getElementById('panel-body').innerHTML = `
+    <div style="margin-bottom:16px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">${PLATFORM_ICONS[plat]??'•'}</span>
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px">${PLATFORM_LABELS[plat]??plat}</div>
+        <div style="color:#475569;font-family:'DM Mono',monospace;font-size:10px;margin-top:2px">${dateLabel}</div>
+      </div>
+    </div>
+    <div style="background:rgba(0,200,255,0.05);border:1px solid rgba(0,200,255,0.1);border-radius:10px;padding:20px;text-align:center">
+      <div style="font-size:13px;color:#64748b;margin-bottom:16px">No slot exists here yet. Generate your plan first, or go to Calendar to set up your posting schedule.</div>
+      <button class="btn btn-primary" onclick="generateWeek();closePanel()">✦ Generate Week Plan</button>
+    </div>`;
+  document.getElementById('panel-overlay').classList.add('open');
+  document.getElementById('slot-panel').classList.add('open');
+}
+
+async function navWeek(dir) {
+  currentWeekStart = addDays(currentWeekStart, dir * 7);
+  await loadPlan();
+}
+
+async function generateWeek() {
+  if (!confirm('Generate AI content for all empty slots this week?')) return;
+  try {
+    const r = await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/plan/generate-week`, { method:'POST', headers:V2H() });
+    const d = await r.json();
+    showToast(`Queued ${d.slotsQueued} slots for generation`);
+    await loadPlan();
+  } catch(e) { showToast(e.message, true); }
+}
+
+// ── Slot panel ────────────────────────────────────────────────────────────────
+async function openSlot(slotId) {
+  currentSlotId = slotId;
+  const slot = currentPlan?.slots?.find(s => s.id === slotId);
+  if (!slot) return;
+
+  const plat = slot.platform;
+  const limit = PLATFORM_LIMITS[plat] ?? 3000;
+  const existingContent = slot.contentRun?.editedContent ?? slot.contentRun?.outputContent ?? slot.manualContent ?? '';
+  const status = slot.status;
+  const isLocked = ['approved','posted'].includes(status);
+  const runId = slot.contentRunId;
+
+  const thumbUrl = slot.contentRun?.mediaAsset?.url ?? slot.mediaAsset?.url ?? '';
+
+  let body = `
+    <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">${PLATFORM_ICONS[plat]??'•'}</span>
+      <div style="flex:1">
+        <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px">${PLATFORM_LABELS[plat]??plat}</div>
+        <div style="color:#475569;font-family:'DM Mono',monospace;font-size:10px;margin-top:2px">${fmtDateTime(slot.scheduledDate)}</div>
+      </div>
+      <span class="badge badge-${status==='empty'?'draft':status}">${(status==='empty'?'draft':status).toUpperCase()}</span>
+    </div>
+  `;
+
+  if (thumbUrl) {
+    body += `<div style="margin-bottom:16px;border-radius:8px;overflow:hidden;border:1px solid #1e293b">
+      <img src="${thumbUrl}" style="width:100%;max-height:180px;object-fit:cover;display:block" alt="Attached media">
+      <div style="padding:8px 10px;background:#090f1f;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:#475569">Attached media</span>
+        <button class="btn btn-ghost btn-sm" onclick="openMediaPicker('slot')" style="font-size:10px">Change</button>
+      </div>
+    </div>`;
+  }
+
+  if (isLocked) {
+    body += `<div class="run-original-label">CONTENT</div><div class="run-original">${existingContent || '(no content)'}</div>`;
+  } else {
+    body += `
+      ${!existingContent ? `<div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn btn-primary btn-sm" onclick="generateSlot('${slotId}')">✦ Generate with AI</button>
+        <button class="btn btn-ghost btn-sm" onclick="focusEditor()">✏ Write my own</button>
+      </div>` : ''}
+      <div class="editor-label">CONTENT</div>
+      <textarea class="editor-ta" id="slot-ta" placeholder="Start writing or click Generate…" oninput="updateSlotChar()">${existingContent}</textarea>
+      <div class="char-row">
+        <div class="char-bar-wrap"><div id="slot-char-fill" class="char-bar-fill" style="width:0%;background:#34d399"></div></div>
+        <span id="slot-char-text" class="char-text char-ok">0 / ${limit}</span>
+      </div>
+    `;
+
+    if (!thumbUrl) {
+      body += `<div style="margin-bottom:16px"><button class="media-btn" onclick="openMediaPicker('slot')">📎 Attach media</button></div>`;
+    }
+
+    body += `<div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="saveSlotDraft('${slotId}','${runId||''}')">Save Draft</button>
+      <button class="btn btn-green" id="slot-submit-btn" onclick="submitSlot('${slotId}')">Submit for Approval</button>
+      <button class="btn btn-ghost btn-sm" onclick="clearSlot('${slotId}')" style="margin-left:auto;color:#f87171">Clear</button>
+    </div>`;
+  }
+
+  document.getElementById('panel-title').textContent = `${PLATFORM_LABELS[plat]??plat} — ${fmtDate(new Date(slot.scheduledDate))}`;
+  document.getElementById('panel-body').innerHTML = body;
+  document.getElementById('panel-overlay').classList.add('open');
+  document.getElementById('slot-panel').classList.add('open');
+
+  if (!isLocked) updateSlotChar();
+}
+
+function focusEditor() { document.getElementById('slot-ta')?.focus(); }
+
+function updateSlotChar() {
+  const ta = document.getElementById('slot-ta');
+  const fill = document.getElementById('slot-char-fill');
+  const txt = document.getElementById('slot-char-text');
+  if (!ta || !fill || !txt) return;
+  const slot = currentPlan?.slots?.find(s => s.id === currentSlotId);
+  const limit = PLATFORM_LIMITS[slot?.platform] ?? 3000;
+  const len = ta.value.length;
+  const pct = Math.min(100, len / limit * 100);
+  const over = len > limit;
+  const warn = len > limit * 0.85;
+  fill.style.width = pct + '%';
+  fill.style.background = over ? '#f87171' : warn ? '#fbbf24' : '#34d399';
+  txt.className = `char-text ${over?'char-over':warn?'char-warn':'char-ok'}`;
+  txt.textContent = `${len} / ${limit}`;
+  const btn = document.getElementById('slot-submit-btn');
+  if (btn) btn.disabled = over;
+}
+
+async function generateSlot(slotId) {
+  const ta = document.getElementById('slot-ta');
+  if (ta) { ta.value = 'Generating…'; ta.disabled = true; }
+  try {
+    const r = await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/plan/slots/${slotId}/generate`, {
+      method: 'POST', headers: V2H(),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const d = await r.json();
+    const content = d.run?.outputContent ?? '';
+    if (ta) { ta.value = content; ta.disabled = false; }
+    updateSlotChar();
+    showToast('Content generated!');
+    // Refresh plan in background
+    loadPlan();
+  } catch(e) {
+    showToast(e.message, true);
+    if (ta) { ta.value = ''; ta.disabled = false; }
+  }
+}
+
+async function saveSlotDraft(slotId, runId) {
+  const ta = document.getElementById('slot-ta');
+  const content = ta?.value ?? '';
+  try {
+    if (runId) {
+      await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/content/${runId}`, {
+        method:'PATCH', headers:V2H(), body:JSON.stringify({ editedContent: content }),
+      });
+    } else {
+      await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/plan/slots/${slotId}/manual`, {
+        method:'POST', headers:V2H(), body:JSON.stringify({ content }),
+      });
+    }
+    showToast('Draft saved');
+    await loadPlan();
+  } catch(e) { showToast(e.message, true); }
+}
+
+async function submitSlot(slotId) {
+  try {
+    // Save current content first
+    const ta = document.getElementById('slot-ta');
+    if (ta?.value) await saveSlotDraft(slotId, currentPlan?.slots?.find(s=>s.id===slotId)?.contentRunId ?? '');
+
+    await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/plan/slots/${slotId}/submit`, { method:'POST', headers:V2H() });
+    showToast('Submitted for approval!');
+    closePanel();
+    await loadPlan();
+  } catch(e) { showToast(e.message, true); }
+}
+
+async function clearSlot(slotId) {
+  if (!confirm('Clear this slot?')) return;
+  try {
+    await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/plan/slots/${slotId}`, { method:'DELETE', headers:V2H() });
+    closePanel();
+    await loadPlan();
+  } catch(e) { showToast(e.message, true); }
+}
+
+function closePanel() {
+  document.getElementById('panel-overlay').classList.remove('open');
+  document.getElementById('slot-panel').classList.remove('open');
+  currentSlotId = null;
+}
+
+// ── BY CHANNEL ────────────────────────────────────────────────────────────────
+const PLATFORM_GUIDANCE = {
+  linkedin:  'Long-form works — up to 3,000 chars. Hooks + structure win.',
+  twitter:   '280 chars max. Lead with the hook. Cut everything else.',
+  x:         '280 chars max. Lead with the hook. Cut everything else.',
+  instagram: '150 chars is the sweet spot. Caption supports the visual.',
+  facebook:  'Conversational tone. 40–80 chars for best reach.',
+  youtube:   'Full description — keywords in the first 2 lines.',
+  tiktok:    '150 chars optimal. Trend-aware, hook-first.',
+  reddit:    'Authentic, no hard sell. Add value or a question.',
+  discord:   'Casual, community tone. Short is fine.',
+  slack:     'Peer-to-peer feel. 1–2 sentences.',
+  telegram:  'Direct and informative. Markdown supported.',
+};
+
+async function loadChannels(filterPlatform) {
+  const el = document.getElementById('main-content');
+  el.innerHTML = '<div class="loading"><div class="skel skel-h" style="width:40%;margin-bottom:8px"></div><div class="skel skel-p" style="width:65%"></div><div class="skel skel-card" style="margin-top:16px"></div><div class="skel skel-card"></div></div>';
+  try {
+    const weekParam = currentWeekStart.toISOString().slice(0,10);
+    const r = await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/plan?week=${weekParam}`, { headers: V2H() });
+    const d = await r.json();
+    currentPlan = d.plan;
+    renderChannels(currentPlan, currentWeekStart);
+    if (filterPlatform) selectChannel(filterPlatform);
+  } catch(e) {
+    el.innerHTML = (isV2Error(e) ? v2OfflineBanner('Channel content') : '') + `<div class="empty-state">Failed to load: ${e.message}</div>`;
+  }
+}
+
+function renderChannels(plan, weekStart) {
+  const slots = plan?.slots ?? [];
+  const platforms = [...new Set(slots.map(s => s.platform))];
+
+  if (!platforms.length) {
+    document.getElementById('main-content').innerHTML = `<div class="empty-state">No content in plan yet.<br><br>
+      <button class="btn btn-primary" onclick="switchTab('plan')">📅 Go to Calendar</button></div>`;
+    return;
+  }
+
+  const weekLabel = fmtWeek(weekStart);
+  let html = `
+    <div class="week-header" style="margin-bottom:16px">
+      <div class="week-nav">
+        <button class="btn btn-ghost btn-sm" onclick="navChannelWeek(-1)">← Prev</button>
+        <div class="week-label">Week of ${weekLabel}</div>
+        <button class="btn btn-ghost btn-sm" onclick="navChannelWeek(1)">Next →</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="switchTab('plan')">📅 Calendar view</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px" id="ch-nav">
+      ${platforms.map((p, i) => `<button class="plat-chip ${i===0?'on':''}" id="pchip-${p}" onclick="selectChannel('${p}')">${PLATFORM_ICONS[p]??'•'} ${(PLATFORM_LABELS[p]??p).toUpperCase()}</button>`).join('')}
+    </div>
+  `;
+
+  for (const plat of platforms) {
+    const platSlots = slots.filter(s => s.platform === plat).sort((a,b) => new Date(a.scheduledDate) - new Date(b.scheduledDate));
+    const limit = PLATFORM_LIMITS[plat] ?? 3000;
+    const guidance = PLATFORM_GUIDANCE[plat] ?? '';
+    const isShort = limit <= 500;
+
+    html += `<div id="channel-${plat}" class="channel-section" style="${platforms[0]===plat?'':'display:none'}">
+      <div style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <span style="font-size:24px">${PLATFORM_ICONS[plat]??'•'}</span>
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:15px">${PLATFORM_LABELS[plat]??plat}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:#64748b;margin-top:2px">${guidance}</div>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:${isShort?'#fbbf24':'#64748b'}">LIMIT: ${limit.toLocaleString()} chars</div>
+          ${isShort?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:#f87171;margin-top:2px">SHORT FORM — keep it tight</div>':''}
+        </div>
+      </div>`;
+
+    if (!platSlots.length) {
+      html += `<div class="empty-state" style="padding:32px">No slots for ${PLATFORM_LABELS[plat]??plat} this week.</div>`;
+    } else {
+      for (const s of platSlots) {
+        const content = s.contentRun?.editedContent ?? s.contentRun?.outputContent ?? s.manualContent ?? '';
+        const len = content.length;
+        const pct = Math.min(100, len/limit*100);
+        const over = len > limit;
+        const warn = len > limit * 0.85;
+        const isLocked = ['approved','posted'].includes(s.status);
+        const statusBadge = s.status === 'empty' ? 'draft' : s.status;
+        const dayLabel = new Date(s.scheduledDate).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+
+        html += `<div class="run-card" style="margin-bottom:14px;border-color:${over?'#7f1d1d':s.status==='approved'?'#059669':'#1e293b'}">
+          <div class="run-head">
+            <span class="badge badge-${statusBadge}">${statusBadge.toUpperCase()}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:10px;color:#475569;margin-left:auto">${dayLabel} · ${fmtDateTime(s.scheduledDate)}</span>
+          </div>
+          <div class="run-body">`;
+
+        if (isLocked) {
+          html += `<div class="run-original" style="color:#94a3b8;white-space:pre-wrap">${content||'(no content)'}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:10px;color:#475569;margin-top:6px">${len} / ${limit} chars</div>`;
+        } else {
+          html += `<textarea class="editor-ta" id="ch-ta-${s.id}" style="min-height:${isShort?'60px':'110px'}" oninput="chChar('${s.id}',${limit})" placeholder="${content?'':'No content — click Generate'}">${content}</textarea>
+            <div class="char-row">
+              <div class="char-bar-wrap"><div id="ch-bar-${s.id}" class="char-bar-fill" style="width:${pct}%;background:${over?'#f87171':warn?'#fbbf24':'#34d399'}"></div></div>
+              <span id="ch-chr-${s.id}" class="char-text ${over?'char-over':warn?'char-warn':'char-ok'}">${len} / ${limit}</span>
+            </div>`;
+        }
+
+        html += `</div><div class="run-foot">`;
+        if (!isLocked) {
+          html += `<button class="btn btn-ghost btn-sm" onclick="chSave('${s.id}','${s.contentRunId||''}')">Save</button>
+            <button class="btn btn-green btn-sm" id="ch-sbm-${s.id}" onclick="chSubmit('${s.id}')" ${over?'disabled':''}>Submit</button>`;
+          if (!content) {
+            html += `<button class="btn btn-primary btn-sm" onclick="chGenerate('${s.id}')">✦ Generate</button>`;
+          }
+        }
+        html += `</div></div>`;
+      }
+    }
+    html += `</div>`;
+  }
+
+  document.getElementById('main-content').innerHTML = html;
+}
+
+function selectChannel(plat) {
+  document.querySelectorAll('#ch-nav .plat-chip').forEach(c => c.classList.remove('on'));
+  document.getElementById(`pchip-${plat}`)?.classList.add('on');
+  document.querySelectorAll('.channel-section').forEach(s => { s.style.display = 'none'; });
+  const sec = document.getElementById(`channel-${plat}`);
+  if (sec) sec.style.removeProperty('display');
+}
+
+function chChar(slotId, limit) {
+  const ta = document.getElementById(`ch-ta-${slotId}`);
+  const bar = document.getElementById(`ch-bar-${slotId}`);
+  const chr = document.getElementById(`ch-chr-${slotId}`);
+  const btn = document.getElementById(`ch-sbm-${slotId}`);
+  if (!ta||!bar||!chr) return;
+  const len = ta.value.length;
+  const pct = Math.min(100, len/limit*100);
+  const over = len > limit;
+  bar.style.width = pct + '%';
+  bar.style.background = over ? '#f87171' : len > limit*0.85 ? '#fbbf24' : '#34d399';
+  chr.className = `char-text ${over?'char-over':len>limit*0.85?'char-warn':'char-ok'}`;
+  chr.textContent = `${len} / ${limit}`;
+  if (btn) btn.disabled = over;
+}
+
+async function chSave(slotId, runId) {
+  const ta = document.getElementById(`ch-ta-${slotId}`);
+  if (!ta) return;
+  try {
+    if (runId) {
+      await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/content/${runId}`, {
+        method:'PATCH', headers:V2H(), body:JSON.stringify({ editedContent: ta.value }),
+      });
+    } else {
+      await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/plan/slots/${slotId}/manual`, {
+        method:'POST', headers:V2H(), body:JSON.stringify({ content: ta.value }),
+      });
+    }
+    showToast('Saved');
+  } catch(e) { showToast(e.message, true); }
+}
+
+async function chSubmit(slotId) {
+  const slot = currentPlan?.slots?.find(s => s.id === slotId);
+  await chSave(slotId, slot?.contentRunId ?? '');
+  try {
+    await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/plan/slots/${slotId}/submit`, { method:'POST', headers:V2H() });
+    showToast('Submitted for approval!');
+    await loadChannels();
+  } catch(e) { showToast(e.message, true); }
+}
+
+async function chGenerate(slotId) {
+  const ta = document.getElementById(`ch-ta-${slotId}`);
+  if (ta) { ta.value = 'Generating…'; ta.disabled = true; }
+  try {
+    const r = await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/plan/slots/${slotId}/generate`, {
+      method:'POST', headers:V2H(),
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const d = await r.json();
+    if (ta) { ta.value = d.run?.outputContent ?? ''; ta.disabled = false; }
+    const slot = currentPlan?.slots?.find(s => s.id === slotId);
+    chChar(slotId, PLATFORM_LIMITS[slot?.platform] ?? 3000);
+    showToast('Generated!');
+  } catch(e) {
+    showToast(e.message, true);
+    if (ta) { ta.value = ''; ta.disabled = false; }
+  }
+}
+
+async function navChannelWeek(dir) {
+  currentWeekStart = addDays(currentWeekStart, dir * 7);
+  await loadChannels();
+}
+
+// ── Media picker ──────────────────────────────────────────────────────────────
+async function openMediaPicker(context) {
+  mediaCallback = context;
+  document.getElementById('media-overlay').classList.add('open');
+  document.getElementById('media-panel').classList.add('open');
+
+  if (!allAssets.length) {
+    document.getElementById('media-grid-inner').innerHTML = '<div style="color:#64748b;font-family:monospace;font-size:12px">Loading…</div>';
+    try {
+      const r = await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/library`, { headers: V2H() });
+      const d = await r.json();
+      allAssets = d.assets ?? [];
+    } catch(e) { allAssets = []; }
+  }
+  renderMediaGrid(allAssets);
+}
+
+function renderMediaGrid(assets) {
+  const grid = document.getElementById('media-grid-inner');
+  if (!assets.length) { grid.innerHTML = '<div style="color:#475569;font-family:monospace;font-size:12px">No assets in library yet.</div>'; return; }
+  grid.innerHTML = assets.map(a => {
+    const isImg = a.type === 'image';
+    return `<div class="media-grid-item" onclick="selectAsset('${a.id}')" title="${a.filename}">
+      ${isImg ? `<img src="${a.url}" style="width:100%;height:100%;object-fit:cover;border-radius:6px">` : '🎬'}
+    </div>`;
+  }).join('');
+}
+
+function filterMedia(type) {
+  const filtered = type === 'all' ? allAssets : allAssets.filter(a => a.type === type);
+  renderMediaGrid(filtered);
+}
+
+async function selectAsset(assetId) {
+  closeMedia();
+  if (mediaCallback === 'slot' && currentSlotId) {
+    const slot = currentPlan?.slots?.find(s => s.id === currentSlotId);
+    if (slot?.contentRunId) {
+      await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/content/${slot.contentRunId}/attach-media`, {
+        method:'POST', headers:V2H(), body:JSON.stringify({ assetId }),
+      });
+      showToast('Media attached');
+    }
+  } else if (mediaCallback && currentRunId) {
+    await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/content/${currentRunId}/attach-media`, {
+      method:'POST', headers:V2H(), body:JSON.stringify({ assetId }),
+    });
+    showToast('Media attached');
+    await loadContent();
+  }
+}
+
+function closeMedia() {
+  document.getElementById('media-overlay').classList.remove('open');
+  document.getElementById('media-panel').classList.remove('open');
+}
+
+// ── MY CONTENT ────────────────────────────────────────────────────────────────
+async function loadContent() {
+  const el = document.getElementById('main-content');
+  el.innerHTML = '<div class="loading"><div class="skel skel-h" style="width:40%;margin-bottom:8px"></div><div class="skel skel-p" style="width:65%"></div><div class="skel skel-card" style="margin-top:16px"></div><div class="skel skel-card"></div></div>';
+  try {
+    // Fetch recent content runs for this affiliate
+    const r = await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/content`, { headers: V2H() });
+    if (!r.ok) { el.innerHTML = renderContentFallback(); return; }
+    const d = await r.json();
+    renderContent(d.runs ?? []);
+  } catch(e) {
+    el.innerHTML = renderContentFallback();
+  }
+}
+
+function renderContentFallback() {
+  return `<div class="empty-state">No content runs yet.<br><br>
+    <button class="btn btn-primary" onclick="generateNew()">✦ Generate Content</button>
+  </div>`;
+}
+
+function renderContent(runs) {
+  if (!runs.length) { document.getElementById('main-content').innerHTML = renderContentFallback(); return; }
+
+  const STAT_COLORS = { strong:'#34d399', acceptable:'#fbbf24', revise:'#f87171' };
+
+  let html = `<div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:16px">${runs.length} Content Pieces</div>
+    <button class="btn btn-primary btn-sm" onclick="generateNew()">✦ Generate New</button>
+  </div>`;
+
+  for (const run of runs) {
+    const score = run.scores?.[0];
+    const status = run.status;
+    const plat = run.channel;
+    const originalContent = run.outputContent ?? '';
+    const editedContent = run.editedContent;
+    const displayContent = editedContent ?? originalContent;
+    const limit = PLATFORM_LIMITS[plat] ?? 3000;
+    const len = displayContent.length;
+    const pct = Math.min(100, len/limit*100);
+    const over = len > limit;
+    const statusBadge = run.submittedForApproval ? 'submitted' : (status === 'approved' ? 'approved' : status === 'rejected' ? 'flagged' : 'draft');
+    const isLocked = ['approved','dispatched'].includes(status);
+
+    html += `
+      <div class="run-card ${statusBadge}" data-runid="${run.id}">
+        <div class="run-head">
+          <span style="font-size:16px">${PLATFORM_ICONS[plat]??'•'}</span>
+          <span class="run-platform">${PLATFORM_LABELS[plat]??plat}</span>
+          <span class="badge badge-${statusBadge}">${statusBadge.toUpperCase()}</span>
+          ${score ? `<span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:${STAT_COLORS[score.label]??'#94a3b8'}">${score.label?.toUpperCase()??''} Q:${score.qualityScore} R:${score.riskScore} C:${score.conversionScore}</span>` : ''}
+        </div>
+        <div class="run-body">
+    `;
+
+    if (editedContent && editedContent !== originalContent) {
+      html += `<div class="run-original-label">AI ORIGINAL</div><div class="run-original">${originalContent.slice(0,200)}${originalContent.length>200?'…':''}</div>`;
+      html += `<div class="run-edit-label">YOUR EDIT</div><div class="run-edit-box">${editedContent}</div>`;
+    } else {
+      html += `<div class="run-original-label">CONTENT</div><div class="run-original" style="color:#94a3b8">${originalContent}</div>`;
+    }
+
+    if (!isLocked) {
+      html += `
+        <div class="editor-label" style="margin-top:12px">EDIT</div>
+        <textarea class="editor-ta" id="ta-${run.id}" style="min-height:100px" oninput="updateCharCount('${run.id}',${limit})">${editedContent ?? originalContent}</textarea>
+        <div class="char-row">
+          <div class="char-bar-wrap"><div id="bar-${run.id}" class="char-bar-fill" style="width:${pct}%;background:${over?'#f87171':'#34d399'}"></div></div>
+          <span id="chr-${run.id}" class="char-text ${over?'char-over':'char-ok'}">${len} / ${limit}</span>
+        </div>
+      `;
+    }
+
+    html += `</div>
+      <div class="run-foot">`;
+
+    if (!isLocked) {
+      html += `
+        <button class="btn btn-ghost btn-sm" onclick="saveDraft('${run.id}')">Save Draft</button>
+        <button class="btn btn-green btn-sm" id="sbm-${run.id}" onclick="submitRun('${run.id}')" ${over?'disabled':''}>Submit for Approval</button>
+        <button class="media-btn" style="margin-left:8px" onclick="openRunMedia('${run.id}')">📎 Media</button>
+      `;
+    }
+
+    if (run.flagReason) {
+      html += `<span style="font-size:11px;color:#f87171;font-family:'DM Mono',monospace">Flagged: ${run.flagReason}</span>`;
+    }
+
+    html += `<span style="margin-left:auto;font-family:'DM Mono',monospace;font-size:10px;color:#334155">${new Date(run.createdAt).toLocaleDateString()}</span>`;
+    html += '</div></div>';
+  }
+
+  document.getElementById('main-content').innerHTML = html;
+}
+
+function updateCharCount(runId, limit) {
+  const ta = document.getElementById(`ta-${runId}`);
+  const bar = document.getElementById(`bar-${runId}`);
+  const chr = document.getElementById(`chr-${runId}`);
+  const btn = document.getElementById(`sbm-${runId}`);
+  if (!ta||!bar||!chr) return;
+  const len = ta.value.length;
+  const pct = Math.min(100, len/limit*100);
+  const over = len > limit;
+  bar.style.width = pct + '%';
+  bar.style.background = over ? '#f87171' : len > limit*0.85 ? '#fbbf24' : '#34d399';
+  chr.className = `char-text ${over?'char-over':len>limit*0.85?'char-warn':'char-ok'}`;
+  chr.textContent = `${len} / ${limit}`;
+  if (btn) btn.disabled = over;
+}
+
+async function saveDraft(runId) {
+  const ta = document.getElementById(`ta-${runId}`);
+  if (!ta) return;
+  try {
+    await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/content/${runId}`, {
+      method:'PATCH', headers:V2H(), body:JSON.stringify({ editedContent: ta.value }),
+    });
+    showToast('Draft saved');
+  } catch(e) { showToast(e.message, true); }
+}
+
+async function submitRun(runId) {
+  await saveDraft(runId);
+  try {
+    await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/content/${runId}/submit`, { method:'POST', headers:V2H() });
+    showToast('Submitted for approval!');
+    await loadContent();
+  } catch(e) { showToast(e.message, true); }
+}
+
+function openRunMedia(runId) {
+  currentRunId = runId;
+  allAssets = [];
+  openMediaPicker('run');
+}
+
+function generateNew() {
+  switchTab('plan');
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+async function loadStats() {
+  const el = document.getElementById('main-content');
+  el.innerHTML = '<div class="loading"><div class="skel skel-h" style="width:40%;margin-bottom:8px"></div><div class="skel skel-p" style="width:65%"></div><div class="skel skel-card" style="margin-top:16px"></div><div class="skel skel-card"></div></div>';
+  try {
+    const r = await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/stats`, { headers: V2H() });
+    const d = await r.json();
+    renderStats(d);
+  } catch(e) { el.innerHTML = (isV2Error(e) ? v2OfflineBanner('Post performance stats') : '') + `<div class="empty-state">Stats not available: ${e.message}</div>`; }
+}
+
+function renderStats(d) {
+  const byPlat = d.clicks?.byPlatform ?? {};
+  const platRows = Object.entries(byPlat).map(([p,n])=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="min-width:90px;font-size:12px;color:#94a3b8">${PLATFORM_LABELS[p]??p}</span>
+      <div style="flex:1;height:6px;background:#1e293b;border-radius:3px">
+        <div style="width:${Math.min(100,n/(d.clicks?.total||1)*100)}%;height:100%;background:#00C8FF;border-radius:3px"></div>
+      </div>
+      <span style="font-family:'DM Mono',monospace;font-size:11px;color:#64748b">${n}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-n">${d.clicks?.total??0}</div><div class="stat-l">TOTAL CLICKS</div></div>
+      <div class="stat-card"><div class="stat-n">${d.conversions?.total??0}</div><div class="stat-l">CONVERSIONS</div></div>
+      <div class="stat-card"><div class="stat-n">${(d.conversionRate??0).toFixed(1)}%</div><div class="stat-l">CONV. RATE</div></div>
+      <div class="stat-card"><div class="stat-n">${d.clicks?.last30Days??0}</div><div class="stat-l">LAST 30 DAYS</div></div>
+    </div>
+    <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:800;margin-bottom:16px;color:#94a3b8">CLICKS BY PLATFORM</div>
+    ${platRows || '<div class="empty-state">No click data yet.</div>'}
+    <div style="margin-top:24px;font-family:'DM Mono',monospace;font-size:11px;color:#334155">
+      Share your affiliate link to start tracking. Your link: <br>
+      <span style="color:#60a5fa">https://alphaboost.app?ref=${affiliateCode}</span>
+    </div>
+  `;
+}
+
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, isError=false) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position:'fixed',bottom:'24px',right:'24px',zIndex:999,
+    padding:'10px 18px',borderRadius:'8px',fontFamily:"'DM Mono',monospace",fontSize:'12px',
+    background:isError?'#7f1d1d':'#064e3b',color:isError?'#f87171':'#34d399',
+    border:`1px solid ${isError?'#f87171':'#34d399'}`,
+    boxShadow:'0 4px 24px rgba(0,0,0,.4)',
+  });
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3500);
+}
+
+// ── Set Up Tab (Tab 2) ────────────────────────────────────────────────────────
+const OAUTH_PLATFORMS = [
+  { id:'linkedin',  label:'LinkedIn',   icon:'💼', authPath:'/auth/linkedin/start',  cred:'LI_CLIENT_ID' },
+  { id:'facebook',  label:'Facebook',   icon:'👥', authPath:'/auth/facebook/start',  cred:'FB_APP_ID' },
+  { id:'instagram', label:'Instagram',  icon:'📸', authPath:'/auth/facebook/start',  cred:'FB_APP_ID', note:'via Facebook' },
+  { id:'youtube',   label:'YouTube',    icon:'▶️', authPath:'/auth/youtube/start',   cred:'YT_CLIENT_ID' },
+  { id:'twitter',   label:'X / Twitter',icon:'𝕏', authPath:'/auth/twitter/start',   cred:'X_API_KEY' },
+  { id:'reddit',    label:'Reddit',     icon:'🤖', authPath:'/auth/reddit/start',    cred:'REDDIT_CLIENT_ID' },
+];
+
+async function loadSetup() {
+  const el = document.getElementById('main-content');
+  el.innerHTML = '<div class="loading"><div class="skel skel-h" style="width:40%;margin-bottom:8px"></div><div class="skel skel-p" style="width:65%"></div><div class="skel skel-card" style="margin-top:16px"></div><div class="skel skel-card"></div></div>';
+
+  let connected = [];
+  try {
+    const r = await fetch('/api/my/connected-platforms', {
+      headers: { Authorization: 'Bearer ' + (localStorage.getItem('vc_token') || '') }
+    });
+    const d = await r.json();
+    connected = d.platforms || [];
+  } catch(e) {}
+
+  const done = connected.length;
+  const total = OAUTH_PLATFORMS.length;
+  const pct = Math.round(done / total * 100);
+
+  el.innerHTML = `
+    <div style="max-width:820px;margin:0 auto;padding:8px 0 40px">
+
+      <!-- Progress -->
+      <div style="background:#0f172a;border:1px solid #1e293b;border-radius:14px;padding:22px 26px;margin-bottom:28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Setup Progress</div>
+          <div style="background:#1e293b;border-radius:20px;height:8px;overflow:hidden;margin-bottom:6px">
+            <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#00C8FF,#22C55E);border-radius:20px;transition:width .4s"></div>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:#475569">${done} of ${total} platforms connected</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:${pct===100?'#22C55E':'#00C8FF'}">${pct}%</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:#334155">COMPLETE</div>
+        </div>
+      </div>
+
+      <!-- Platform cards -->
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px">Connect Your Platforms</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:32px">
+        ${OAUTH_PLATFORMS.map(p => {
+          const isConnected = connected.includes(p.id);
+          return `
+          <div style="background:#0f172a;border:1px solid ${isConnected?'#059669':'#1e293b'};border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:22px">${p.icon}</span>
+              <div style="flex:1">
+                <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#f1f5f9">${p.label}</div>
+                ${p.note ? `<div style="font-size:10px;color:#475569;font-family:'DM Mono',monospace">${p.note}</div>` : ''}
+              </div>
+              ${isConnected ? `<span style="font-family:'DM Mono',monospace;font-size:10px;color:#34d399;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.2);padding:3px 8px;border-radius:20px">CONNECTED</span>` : ''}
+            </div>
+            ${isConnected
+              ? `<button onclick="disconnectPlatform('${p.id}')" class="btn btn-ghost btn-sm" style="font-size:10px;color:#64748b">Disconnect</button>`
+              : `<a href="${p.authPath}?affiliateCode=${affiliateCode}" class="btn btn-primary btn-sm" style="text-align:center;text-decoration:none;display:block">Connect ${p.label}</a>`
+            }
+          </div>`;
+        }).join('')}
+      </div>
+
+      <!-- Personal info -->
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px">Personal Info</div>
+      <div style="background:#0f172a;border:1px solid #1e293b;border-radius:14px;padding:24px;margin-bottom:24px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="setup-form">
+          <div>
+            <div style="font-size:10px;font-family:'DM Mono',monospace;color:#64748b;letter-spacing:.08em;margin-bottom:6px">DISPLAY NAME</div>
+            <input id="su-name" class="editor-ta" style="min-height:unset;padding:9px 12px;resize:none" placeholder="Your name" value="${localStorage.getItem('su_name_'+affiliateCode)||''}">
+          </div>
+          <div>
+            <div style="font-size:10px;font-family:'DM Mono',monospace;color:#64748b;letter-spacing:.08em;margin-bottom:6px">TIMEZONE</div>
+            <input id="su-tz" class="editor-ta" style="min-height:unset;padding:9px 12px;resize:none" placeholder="America/New_York" value="${localStorage.getItem('su_tz_'+affiliateCode)||'America/New_York'}">
+          </div>
+          <div style="grid-column:1/-1">
+            <div style="font-size:10px;font-family:'DM Mono',monospace;color:#64748b;letter-spacing:.08em;margin-bottom:6px">BIO (used for AI content personalisation)</div>
+            <textarea id="su-bio" class="editor-ta" style="min-height:90px" placeholder="Brief professional bio…">${localStorage.getItem('su_bio_'+affiliateCode)||''}</textarea>
+          </div>
+          <div>
+            <div style="font-size:10px;font-family:'DM Mono',monospace;color:#64748b;letter-spacing:.08em;margin-bottom:6px">WEEKLY POST TARGET</div>
+            <input id="su-target" type="number" min="1" max="21" class="editor-ta" style="min-height:unset;padding:9px 12px;resize:none" value="${localStorage.getItem('su_target_'+affiliateCode)||'5'}">
+          </div>
+          <div>
+            <div style="font-size:10px;font-family:'DM Mono',monospace;color:#64748b;letter-spacing:.08em;margin-bottom:6px">CONTENT THEMES (comma-separated)</div>
+            <input id="su-themes" class="editor-ta" style="min-height:unset;padding:9px 12px;resize:none" placeholder="career growth, AI, leadership" value="${localStorage.getItem('su_themes_'+affiliateCode)||''}">
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;align-items:center">
+          <button class="btn btn-primary" onclick="saveSetup()">Save Info</button>
+          <span id="su-saved-label" style="font-family:'DM Mono',monospace;font-size:11px;color:#475569"></span>
+        </div>
+      </div>
+
+      <!-- Resume upload -->
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px">Resume / CV</div>
+      <div style="background:#0f172a;border:1px dashed #1e293b;border-radius:14px;padding:28px;text-align:center">
+        <div style="font-size:28px;margin-bottom:10px">📄</div>
+        <div style="font-size:13px;color:#475569;margin-bottom:14px">Upload your resume to help personalise your AI-generated content</div>
+        <label style="cursor:pointer">
+          <input type="file" accept=".pdf,.doc,.docx,.txt" style="display:none" onchange="handleResumeUpload(event)">
+          <span class="btn btn-ghost">Choose File</span>
+        </label>
+        <div id="su-resume-name" style="font-family:'DM Mono',monospace;font-size:11px;color:#475569;margin-top:10px">
+          ${localStorage.getItem('su_resume_name_'+affiliateCode) ? '✓ ' + localStorage.getItem('su_resume_name_'+affiliateCode) : 'No file chosen'}
+        </div>
+      </div>
+
+    </div>`;
+}
+
+async function saveSetup() {
+  const name   = document.getElementById('su-name')?.value || '';
+  const tz     = document.getElementById('su-tz')?.value || '';
+  const bio    = document.getElementById('su-bio')?.value || '';
+  const target = document.getElementById('su-target')?.value || '5';
+  const themes = document.getElementById('su-themes')?.value || '';
+  const lbl    = document.getElementById('su-saved-label');
+
+  // Persist to localStorage (and push to v2 if available)
+  localStorage.setItem('su_name_'+affiliateCode, name);
+  localStorage.setItem('su_tz_'+affiliateCode, tz);
+  localStorage.setItem('su_bio_'+affiliateCode, bio);
+  localStorage.setItem('su_target_'+affiliateCode, target);
+  localStorage.setItem('su_themes_'+affiliateCode, themes);
+
+  try {
+    await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/instance`, {
+      method:'PATCH', headers:V2H(),
+      body: JSON.stringify({
+        personalBio: bio,
+        timezone: tz,
+        weeklyPostTarget: parseInt(target)||5,
+        contentThemes: themes.split(',').map(t=>t.trim()).filter(Boolean),
+      }),
+    });
+  } catch(e) { /* v2 offline — local save is enough */ }
+
+  if (lbl) { lbl.textContent = '✓ Saved'; lbl.style.color = '#34d399'; }
+  showToast('Profile saved');
+}
+
+async function disconnectPlatform(platform) {
+  if (!confirm(`Disconnect ${platform}?`)) return;
+  try {
+    await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/connections/${platform}`, { method:'DELETE', headers:V2H() });
+  } catch(e) {}
+  showToast(`${platform} disconnected`);
+  loadSetup();
+}
+
+function handleResumeUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  localStorage.setItem('su_resume_name_'+affiliateCode, file.name);
+  const nameEl = document.getElementById('su-resume-name');
+  if (nameEl) nameEl.textContent = '✓ ' + file.name;
+  showToast('Resume saved locally');
+}
+
+// ── Welcome Tab (Tab 1) ───────────────────────────────────────────────────────
+async function loadWelcome() {
+  const el = document.getElementById('main-content');
+  el.innerHTML = '<div class="loading"><div class="skel skel-h" style="width:40%;margin-bottom:8px"></div><div class="skel skel-p" style="width:65%"></div><div class="skel skel-card" style="margin-top:16px"></div><div class="skel skel-card"></div></div>';
+  let data = { videoUrl: '', instructions: '' };
+  try {
+    const r = await fetch('/api/welcome');
+    if (r.ok) data = await r.json();
+  } catch(e) {}
+
+  const videoUrl = data.videoUrl || '';
+  const instructions = data.instructions || '';
+
+  // Build YouTube embed URL from various YouTube link formats
+  function toYTEmbed(url) {
+    if (!url) return '';
+    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1` : '';
+  }
+
+  const embedUrl = toYTEmbed(videoUrl);
+
+  el.innerHTML = `
+    <div style="max-width:820px;margin:0 auto;padding:8px 0 40px">
+
+      <!-- Hero greeting -->
+      <div style="background:linear-gradient(135deg,rgba(0,200,255,0.07),rgba(34,197,94,0.05));border:1px solid rgba(0,200,255,0.15);border-radius:16px;padding:32px;margin-bottom:28px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:#00C8FF;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px">Welcome to</div>
+          <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:#f1f5f9;line-height:1.15;margin-bottom:6px">AlphaBoost<br>Affiliate Hub</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.6">Your personalised command centre for social content, earnings, and performance.</div>
+        </div>
+        <div style="text-align:right;min-width:140px">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:#475569;margin-bottom:4px">YOUR CODE</div>
+          <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#00C8FF;letter-spacing:2px">${affiliateCode || '—'}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:#334155;margin-top:4px">TIER ${affiliateTier}</div>
+        </div>
+      </div>
+
+      <!-- Video -->
+      ${embedUrl ? `
+      <div style="margin-bottom:28px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Welcome Video</div>
+        <div style="position:relative;width:100%;padding-bottom:56.25%;border-radius:12px;overflow:hidden;border:1px solid #1e293b">
+          <iframe src="${embedUrl}" style="position:absolute;inset:0;width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture" allowfullscreen></iframe>
+        </div>
+      </div>` : `
+      <div style="margin-bottom:28px;border:1px dashed #1e293b;border-radius:12px;padding:32px;text-align:center">
+        <div style="font-size:32px;margin-bottom:10px">🎬</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:#475569">No welcome video uploaded yet</div>
+      </div>`}
+
+      <!-- Instructions -->
+      ${instructions ? `
+      <div style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:24px 28px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;color:#64748b;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px">Getting Started</div>
+        <div class="welcome-instructions" style="font-size:14px;color:#94a3b8;line-height:1.8">${instructions}</div>
+      </div>` : ''}
+
+      <!-- Quick-start actions -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:28px">
+        <button onclick="switchTab('setup')" style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:18px;text-align:left;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='#00C8FF'" onmouseout="this.style.borderColor='#1e293b'">
+          <div style="font-size:22px;margin-bottom:8px">⚙️</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:4px">Set Up</div>
+          <div style="font-size:11px;color:#475569">Connect your accounts</div>
+        </button>
+        <button onclick="switchTab('calendar')" style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:18px;text-align:left;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='#00C8FF'" onmouseout="this.style.borderColor='#1e293b'">
+          <div style="font-size:22px;margin-bottom:8px">📅</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:4px">Calendar</div>
+          <div style="font-size:11px;color:#475569">View your content plan</div>
+        </button>
+        ${affiliateTier === 1 ? `
+        <button onclick="switchTab('earnings')" style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:18px;text-align:left;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='#22C55E'" onmouseout="this.style.borderColor='#1e293b'">
+          <div style="font-size:22px;margin-bottom:8px">📊</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:4px">Earnings Calc</div>
+          <div style="font-size:11px;color:#475569">Project your income</div>
+        </button>` : ''}
+        <button onclick="openProfile()" style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:18px;text-align:left;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='#00C8FF'" onmouseout="this.style.borderColor='#1e293b'">
+          <div style="font-size:22px;margin-bottom:8px">👤</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:#f1f5f9;margin-bottom:4px">My Profile</div>
+          <div style="font-size:11px;color:#475569">Upload avatar, get contract</div>
+        </button>
+      </div>
+
+    </div>`;
+}
+
+// ── Earnings Calc (Tab 12) ────────────────────────────────────────────────────
+function loadEarningsCalc() {
+  const el = document.getElementById('main-content');
+  const DEFAULTS = { t2num:50, platforms:5, views:500, cvr:0.5, payments:2, t1comm:10, t1over:10, days:30 };
+  el.innerHTML = `
+  <div style="padding:28px 0;max-width:1200px;margin:0 auto">
+    <div style="margin-bottom:24px">
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#f1f5f9;margin-bottom:4px">Earnings Calculator</div>
+      <div style="font-size:13px;color:#475569">Estimate your potential monthly earnings as a Tier 1 affiliate</div>
+    </div>
+    <div id="calc-inner"></div>
+  </div>`;
+
+  // Reuse the calc widget already built — inject it
+  const s = document.createElement('script');
+  s.textContent = `(function(){
+    const DEFAULTS={t2num:50,platforms:5,views:500,cvr:0.5,payments:2,t1comm:10,t1over:10,days:30};
+    const wrap=document.getElementById('calc-inner');
+    wrap.innerHTML=\`<div class="calc-2col" style="display:grid;grid-template-columns:35% 1fr;gap:20px;align-items:start">
+      <div style="background:#111827;border:1px solid #1e293b;border-radius:14px;padding:22px">
+        <div style="font-size:12px;font-family:'DM Mono',monospace;color:#00C8FF;letter-spacing:1px;text-transform:uppercase;margin-bottom:18px">Configure</div>
+        \${[['t2num','Tier 2 Affiliates',1,100,1,''],['platforms','Platforms / Channels',1,10,1,''],['views','Views per Platform / Day',100,2000,50,''],['cvr','Conversion Rate (%)',0.1,5.0,0.1,''],['payments','Avg Monthly Payments',1,12,1,''],['t1comm','T1 Commission / Payment',1,30,1,'$'],['t1over','T1 Override / Payment (T2)',1,30,1,'$'],['days','Days per Month',28,31,1,'']].map(([id,lbl,mn,mx,st,pfx])=>\\\`
+          <div style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+              <span style="font-size:13px;color:#e2e8f0">\\\${lbl}</span>
+              <span style="font-size:13px;font-family:'DM Mono',monospace;color:#00C8FF" id="cv-\\\${id}">\\\${pfx}\\\${DEFAULTS[id]}</span>
+            </div>
+            <input type="range" min="\\\${mn}" max="\\\${mx}" step="\\\${st}" value="\\\${DEFAULTS[id]}" style="width:100%;height:4px;accent-color:#00C8FF;cursor:pointer" oninput="calcV('\\\${id}',this.value,'\\\${pfx}')"/>
+          </div>\\\`).join('')}
+        <button onclick="resetCalcV()" style="width:100%;padding:9px;background:rgba(255,255,255,0.04);border:1px solid #1e293b;border-radius:8px;color:#475569;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer">↺ Reset to Defaults</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="background:linear-gradient(135deg,rgba(0,200,255,0.08),rgba(34,197,94,0.06));border:1px solid rgba(34,197,94,0.2);border-radius:14px;padding:28px;text-align:center">
+          <div style="font-size:12px;font-family:'DM Mono',monospace;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px">Est. Monthly Earnings</div>
+          <div id="calc-hero" style="font-family:'Syne',sans-serif;font-size:64px;color:#22C55E;line-height:1;letter-spacing:-1px">$0</div>
+          <div id="calc-sub" style="font-size:13px;color:#475569;margin-top:8px"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          \${[['own','Your Own','#00C8FF'],['t2','T2 Override','#A78BFA'],['gt','Grand Total','#22C55E']].map(([k,lbl,c])=>\\\`
+          <div style="background:#111827;border:1px solid #1e293b;border-radius:10px;padding:16px">
+            <div style="font-size:11px;font-family:'DM Mono',monospace;color:#475569;text-transform:uppercase;margin-bottom:10px">
+              <span style="width:6px;height:6px;border-radius:50%;background:\\\${c};display:inline-block;margin-right:5px;vertical-align:middle"></span>\\\${lbl}
+            </div>
+            <div id="calc-\\\${k}" style="font-family:'Syne',sans-serif;font-size:24px;color:\\\${c}">$0</div>
+          </div>\\\`).join('')}
+        </div>
+        <div style="font-size:11px;color:#334155;text-align:center;font-style:italic">For illustration purposes only. Earnings are not guaranteed.</div>
+      </div>
+    </div>\`;
+
+    const vals={...DEFAULTS};
+    window.calcV=function(id,v,pfx){vals[id]=parseFloat(v);document.getElementById('cv-'+id).textContent=pfx+v;runCalc();};
+    window.resetCalcV=function(){Object.assign(vals,DEFAULTS);document.querySelectorAll('[id^=cv-]').forEach(e=>{const id=e.id.replace('cv-','');const pfx=e.textContent.startsWith('$')?'$':'';e.textContent=pfx+DEFAULTS[id];});document.querySelectorAll('#calc-inner input[type=range]').forEach(i=>{const id=i.getAttribute('oninput').match(/'([^']+)'/)[1];i.value=DEFAULTS[id];});runCalc();};
+    function fmt(n){if(n>=1e6)return'$'+(n/1e6).toFixed(2)+'M';return'$'+Math.round(n).toLocaleString();}
+    function runCalc(){
+      const{t2num,platforms,views,cvr,payments,t1comm,t1over,days}=vals;
+      const dv=platforms*views,ds=dv*(cvr/100),ms=ds*days;
+      const own=ms*t1comm*payments,t2one=ms*t1over*payments,t2all=t2one*t2num,gt=own+t2all;
+      document.getElementById('calc-hero').textContent=fmt(gt);
+      document.getElementById('calc-sub').textContent=fmt(own)+' own + '+fmt(t2all)+' T2';
+      document.getElementById('calc-own').textContent=fmt(own);
+      document.getElementById('calc-t2').textContent=fmt(t2all);
+      document.getElementById('calc-gt').textContent=fmt(gt);
+    }
+    runCalc();
+  })();`;
+  el.appendChild(s);
+}
+
+
+// ── Profile Modal ─────────────────────────────────────────────────────────────
+function openProfile() {
+  document.getElementById('modal-aff-code').textContent = affiliateCode || '—';
+  document.getElementById('profile-username-label').textContent = localStorage.getItem('vc_username') || '';
+  // Restore saved avatar
+  const saved = localStorage.getItem('profile_avatar');
+  if (saved) setAvatarImage(saved);
+  document.getElementById('profile-overlay').classList.add('open');
+  document.getElementById('profile-modal').style.display = 'block';
+}
+function closeProfile() {
+  document.getElementById('profile-overlay').classList.remove('open');
+  document.getElementById('profile-modal').style.display = 'none';
+}
+function setAvatarImage(src) {
+  ['profile-avatar-hd','profile-avatar-lg'].forEach(id => {
+    const el = document.getElementById(id);
+    el.src = src; el.style.display = 'block';
+  });
+  document.getElementById('profile-initials-hd').style.display = 'none';
+  document.getElementById('profile-avatar-icon').style.display  = 'none';
+}
+function handleAvatarUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    localStorage.setItem('profile_avatar', ev.target.result);
+    setAvatarImage(ev.target.result);
+  };
+  reader.readAsDataURL(file);
+}
+function copyCode() {
+  const code = affiliateCode || '';
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = document.querySelector('.profile-copy-btn');
+    btn.textContent = 'Copied ✓'; btn.style.color = '#34d399';
+    setTimeout(() => { btn.textContent = 'Copy'; btn.style.color = ''; }, 2000);
+  });
+}
+function downloadContract() {
+  fetch('/api/terms')
+    .then(r => r.json())
+    .then(d => {
+      const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/>
+        <title>Affiliate Contract — ${affiliateCode}</title>
+        <style>body{font-family:Georgia,serif;max-width:760px;margin:40px auto;line-height:1.8;color:#111;padding:0 24px}
+        h2{margin-top:32px}h3{margin-top:24px}ul{padding-left:22px}
+        .footer{margin-top:40px;padding-top:16px;border-top:1px solid #ccc;font-size:12px;color:#666}</style>
+        </head><body>
+        <h1>Alphaboost Affiliate Contract</h1>
+        <p><strong>Affiliate Code:</strong> ${affiliateCode}</p>
+        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+        <hr/>
+        ${d.content || ''}
+        <div class="footer">Generated from alphaboost.ngrok.app</div>
+        </body></html>`;
+      const blob = new Blob([html], { type: 'text/html' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `affiliate-contract-${affiliateCode}.html`;
+      a.click();
+    });
+}
+// Restore avatar on page load
+(function() {
+  const saved = localStorage.getItem('profile_avatar');
+  if (saved) { setTimeout(() => setAvatarImage(saved), 100); }
+})();
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>

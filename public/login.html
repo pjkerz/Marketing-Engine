@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AlphaNoetic Login</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@800&family=DM+Sans:wght@400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#020617;display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'DM Sans',sans-serif}
+.card{background:#111827;border:1px solid #1E2D42;border-radius:16px;padding:48px 40px;width:100%;max-width:420px}
+.lock{font-size:40px;margin-bottom:20px;text-align:center}
+.brand{font-family:'Syne',sans-serif;font-weight:800;font-size:26px;color:#F1F5F9;margin-bottom:4px}
+.brand span{color:#00C8FF}
+.sub{font-size:11px;color:#64748B;letter-spacing:.12em;margin-bottom:40px;font-family:monospace}
+label{display:block;font-size:11px;color:#94A3B8;letter-spacing:.1em;margin-bottom:6px;font-family:monospace}
+input{width:100%;background:#020617;border:1px solid #1E2D42;color:#F1F5F9;padding:12px 16px;border-radius:8px;font-size:14px;outline:none;margin-bottom:20px;font-family:'DM Sans',sans-serif}
+input:focus{border-color:#00C8FF;box-shadow:0 0 0 2px rgba(0,200,255,.15)}
+button{width:100%;background:linear-gradient(135deg,#0284C7,#00C8FF);color:#020617;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Syne',sans-serif;letter-spacing:.05em}
+button:hover{opacity:.9}
+.error{color:#f87171;font-size:13px;margin-top:16px;text-align:center;min-height:20px}
+.pw-wrap{position:relative;margin-bottom:20px}
+.pw-wrap input{margin-bottom:0;padding-right:46px}
+.pw-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#64748B;font-size:18px;line-height:1;padding:0;transition:color .15s;width:auto}
+.pw-eye:hover{color:#00C8FF}
+.remember{display:flex;align-items:center;gap:8px;margin-bottom:24px;cursor:pointer}
+.remember input[type=checkbox]{width:16px;height:16px;accent-color:#00C8FF;cursor:pointer;flex-shrink:0;margin:0}
+.remember span{font-size:12px;color:#64748B;font-family:monospace;letter-spacing:.05em;user-select:none}
+.bottom-links{display:flex;justify-content:space-between;align-items:center;margin-top:18px}
+.bottom-links a{font-size:12px;color:#64748B;text-decoration:none;font-family:monospace;letter-spacing:.05em;transition:color .15s}
+.bottom-links a:hover{color:#00C8FF}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="lock">🔐</div>
+  <div class="brand"><span>ALPHA</span>NOETIC</div>
+  <div class="sub">CONTENT PLATFORM</div>
+  <label>USERNAME</label>
+  <input type="text" id="u" placeholder="Your username" autocomplete="username" style="margin-bottom:20px"/>
+  <label>PASSWORD</label>
+  <div class="pw-wrap">
+    <input type="password" id="p" placeholder="Your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"/>
+    <button type="button" class="pw-eye" id="eye-btn" onclick="togglePw()" title="Show/hide password">👁</button>
+  </div>
+  <label class="remember">
+    <input type="checkbox" id="rem"/>
+    <span>REMEMBER ME</span>
+  </label>
+  <button onclick="login()">SIGN IN →</button>
+  <div class="error" id="e"></div>
+  <div class="bottom-links">
+    <a href="/terms.html" target="_blank">Terms &amp; Conditions</a>
+    <a href="/forgot-password.html">Forgot password?</a>
+  </div>
+</div>
+<script>
+const savedUser = localStorage.getItem('remembered_user');
+if (savedUser) { document.getElementById('u').value = savedUser; document.getElementById('rem').checked = true; }
+
+// Auto-login if valid JWT exists
+const t = localStorage.getItem('v2_affiliate_token');
+if (t) {
+  fetch('/api/me', { headers: { Authorization: 'Bearer ' + t } })
+    .then(r => r.json())
+    .then(d => { if (d.username) window.location.href = d.role === 'affiliate' ? '/affiliate' : '/app'; })
+    .catch(() => {});
+}
+
+function togglePw() {
+  const i = document.getElementById('p');
+  const showing = i.type === 'text';
+  i.type = showing ? 'password' : 'text';
+  document.getElementById('eye-btn').textContent = showing ? '👁' : '🙈';
+}
+
+async function login() {
+  const u = document.getElementById('u').value.trim();
+  const p = document.getElementById('p').value;
+  const e = document.getElementById('e');
+  const rem = document.getElementById('rem').checked;
+  e.textContent = '';
+  if (!u || !p) { e.textContent = 'Please enter your username and password.'; return; }
+  try {
+    const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
+    const d = await r.json();
+    if (!r.ok) { e.textContent = d.error || 'Login failed.'; return; }
+    if (rem) { localStorage.setItem('remembered_user', u); } else { localStorage.removeItem('remembered_user'); }
+    localStorage.setItem('v2_affiliate_token', d.token);
+    localStorage.setItem('vc_username', d.username);
+    localStorage.setItem('vc_role', d.role);
+    if (d.affiliateCode) localStorage.setItem('affiliateCode', d.affiliateCode);
+    window.location.href = d.role === 'affiliate' ? '/affiliate' : '/app';
+  } catch { e.textContent = 'Connection error. Please try again.'; }
+}
+</script>
+</body>
+</html>

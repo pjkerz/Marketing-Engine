@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Affiliate Social Media Setup Guide — Alphaboost</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&family=DM+Mono&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#020617;color:#e2e8f0;font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+    .header{background:#0f172a;border-bottom:1px solid #1e293b;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .brand{font-family:'Syne',sans-serif;font-weight:800;font-size:18px;color:#e2e8f0}
+    .brand span{color:#3b82f6}
+    .header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .back-btn{background:none;border:1px solid #1e293b;color:#64748b;padding:6px 14px;border-radius:6px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .2s}
+    .back-btn:hover{border-color:#475569;color:#e2e8f0}
+    .upload-btn{background:#3b82f6;color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;letter-spacing:.05em;cursor:pointer;transition:opacity .2s;display:inline-flex;align-items:center;gap:8px}
+    .upload-btn:hover{opacity:.85}
+    .upload-btn:disabled{opacity:.4;cursor:not-allowed}
+    .upload-btn.success{background:#059669}
+    .main{flex:1;padding:24px 32px;display:flex;flex-direction:column;gap:16px;max-width:1200px;margin:0 auto;width:100%}
+    .page-title{font-family:'Syne',sans-serif;font-weight:800;font-size:22px;color:#e2e8f0}
+    .page-sub{font-family:'DM Mono',monospace;font-size:11px;color:#475569;margin-top:4px}
+    .viewer-wrap{flex:1;background:#0f172a;border:1px solid #1e293b;border-radius:12px;overflow:hidden;min-height:600px;display:flex;flex-direction:column}
+    .viewer-wrap iframe{flex:1;border:none;min-height:600px;width:100%;height:calc(100vh - 200px)}
+    .drop-zone{flex:1;min-height:500px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;cursor:pointer;border:2px dashed #1e293b;border-radius:12px;background:#0f172a;transition:all .2s;padding:40px}
+    .drop-zone:hover,.drop-zone.drag-over{border-color:#3b82f6;background:rgba(59,130,246,.05)}
+    .drop-icon{opacity:.4}
+    .drop-title{font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:#e2e8f0}
+    .drop-sub{font-family:'DM Mono',monospace;font-size:12px;color:#475569;text-align:center}
+    .toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;z-index:9999;transition:opacity .3s;opacity:0;pointer-events:none}
+    .toast.show{opacity:1}
+    .toast.ok{background:#059669;color:#fff}
+    .toast.err{background:#dc2626;color:#fff}
+    input[type=file]{display:none}
+    .steps-nav{display:flex;gap:0;background:#0f172a;border:1px solid #1e293b;border-radius:12px;overflow:hidden;margin-bottom:0}
+    .step-tab{flex:1;padding:16px 20px;cursor:pointer;border:none;background:none;text-align:left;transition:background .2s;border-bottom:3px solid transparent;display:flex;align-items:center;gap:12px}
+    .step-tab:hover{background:rgba(255,255,255,.03)}
+    .step-tab.active{background:rgba(59,130,246,.08);border-bottom-color:#3b82f6}
+    .step-tab+.step-tab{border-left:1px solid #1e293b}
+    .step-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;flex-shrink:0;background:#1e293b;color:#64748b;transition:all .2s}
+    .step-tab.active .step-num{background:#3b82f6;color:#fff}
+    .step-tab.done .step-num{background:#059669;color:#fff}
+    .step-info{}
+    .step-label{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;color:#64748b;margin-bottom:2px}
+    .step-tab.active .step-label{color:#3b82f6}
+    .step-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:#e2e8f0}
+    .step-panel{display:none}.step-panel.active{display:flex;flex-direction:column;gap:16px}
+    .connect-section{background:#0f172a;border:1px solid #1e293b;border-radius:12px;overflow:hidden}
+    .connect-header{padding:18px 24px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .connect-title{font-family:'Syne',sans-serif;font-weight:700;font-size:16px;color:#e2e8f0;margin-bottom:4px}
+    .connect-sub{font-family:'DM Mono',monospace;font-size:11px;color:#475569}
+    .connect-body{padding:24px;background:#020617}
+    .next-btn{align-self:flex-end;background:#3b82f6;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;letter-spacing:.06em;cursor:pointer;display:flex;align-items:center;gap:8px;transition:opacity .2s}
+    .next-btn:hover{opacity:.85}
+    .links-card{background:#0f172a;border:1px solid #1e293b;border-radius:12px;overflow:hidden}
+    .links-card-header{padding:16px 22px;border-bottom:1px solid #1e293b;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .links-card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:15px;color:#e2e8f0}
+    .links-card-sub{font-family:'DM Mono',monospace;font-size:11px;color:#475569;margin-top:3px}
+    .links-card-badge{background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.25);color:#00C8FF;font-family:'DM Mono',monospace;font-size:11px;padding:3px 10px;border-radius:20px}
+    .links-list{display:flex;flex-direction:column;gap:0}
+    .link-row{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid #0d1829;transition:background .15s}
+    .link-row:last-child{border-bottom:none}
+    .link-row:hover{background:rgba(255,255,255,.02)}
+    .link-name{flex:1;min-width:0}
+    .link-name-text{font-size:14px;font-weight:500;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .link-code{font-family:'DM Mono',monospace;font-size:11px;color:#475569;margin-top:2px}
+    .link-status{font-size:11px;padding:2px 9px;border-radius:20px;border:1px solid;white-space:nowrap;flex-shrink:0}
+    .link-status.active{color:#22c55e;border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.08)}
+    .link-status.inactive{color:#94a3b8;border-color:#1e293b;background:#0d1829}
+    .copy-btn{flex-shrink:0;padding:7px 16px;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;border:none;transition:all .2s;min-width:88px;text-align:center}
+    .copy-btn.idle{background:#00C8FF;color:#020617}
+    .copy-btn.idle:hover{background:#38d9ff}
+    .copy-btn.done{background:#22c55e;color:#020617}
+    .copy-btn.loading{background:#1e293b;color:#94a3b8;cursor:not-allowed}
+    .links-empty{padding:32px;text-align:center;color:#475569;font-size:13px}
+    .links-error{padding:16px 22px;color:#f87171;font-size:13px;font-family:'DM Mono',monospace}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand">Alpha<span>boost</span></div>
+  <div class="header-right">
+    <a href="/app" class="back-btn">← Dashboard</a>
+    <button class="upload-btn" id="uploadBtn" onclick="document.getElementById('fileInput').click()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span id="uploadLabel">Upload PDF</span>
+    </button>
+    <input type="file" id="fileInput" accept="application/pdf" onchange="handleFileSelect(this)"/>
+  </div>
+</div>
+
+<div class="main">
+  <div>
+    <div class="page-title">Affiliate Social Media Setup &amp; Connection Guide</div>
+    <div class="page-sub">Version 1.0 · Alphaboost Affiliate Programme · 2026 · Confidential</div>
+  </div>
+
+  <!-- Step tabs -->
+  <div class="steps-nav">
+    <button class="step-tab active" id="tab1" onclick="switchStep(1)">
+      <div class="step-num" id="num1">1</div>
+      <div class="step-info">
+        <div class="step-label">STEP ONE</div>
+        <div class="step-title">Read the Setup Guide</div>
+      </div>
+    </button>
+    <button class="step-tab" id="tab2" onclick="switchStep(2)">
+      <div class="step-num" id="num2">2</div>
+      <div class="step-info">
+        <div class="step-label">STEP TWO</div>
+        <div class="step-title">Connect Your Accounts</div>
+      </div>
+    </button>
+  </div>
+
+  <!-- Personalisation survey links — always visible above steps -->
+  <div class="links-card">
+    <div class="links-card-header">
+      <div>
+        <div class="links-card-title">Personalisation Survey Links</div>
+        <div class="links-card-sub">Copy and send each affiliate their unique questionnaire link before they connect their accounts.</div>
+      </div>
+      <div class="links-card-badge" id="affiliateCount">Loading…</div>
+    </div>
+    <div class="links-list" id="affiliateList">
+      <div class="links-empty">Loading affiliates…</div>
+    </div>
+  </div>
+
+  <!-- Step 1: Guide PDF -->
+  <div class="step-panel active" id="panel1">
+    <div class="viewer-wrap" id="viewerWrap">
+      <!-- filled by JS -->
+    </div>
+    <button class="next-btn" onclick="switchStep(2)">
+      Ready to connect your accounts
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+
+  <!-- Step 2: Sendible connect -->
+  <div class="step-panel" id="panel2">
+    <div class="connect-section">
+      <div class="connect-header">
+        <div>
+          <div class="connect-title">Connect Your Social Media Accounts</div>
+          <div class="connect-sub">Authorise each platform below — takes about 5 minutes. We post on your behalf daily once connected.</div>
+        </div>
+      </div>
+      <div class="connect-body">
+        <div id="client-connect-widget"></div>
+      </div>
+    </div>
+    <button class="next-btn" style="align-self:flex-start;background:#1e293b;color:#94a3b8" onclick="switchStep(1)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      Back to guide
+    </button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const GUIDE_PATH = '/guide.pdf';
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show ' + type;
+    setTimeout(() => { t.className = 'toast ' + type; }, 3000);
+  }
+
+  function renderViewer() {
+    const wrap = document.getElementById('viewerWrap');
+    wrap.innerHTML = `<iframe src="${GUIDE_PATH}?v=${Date.now()}" title="Affiliate Setup Guide"></iframe>`;
+  }
+
+  function renderDropZone() {
+    const wrap = document.getElementById('viewerWrap');
+    wrap.innerHTML = `
+      <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <svg class="drop-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#e2e8f0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="12" y1="18" x2="12" y2="12"/>
+          <polyline points="9 15 12 12 15 15"/>
+        </svg>
+        <div class="drop-title">Drop your PDF here</div>
+        <div class="drop-sub">Or click to browse — Alphaboost_Affiliate_Social_Setup_Guide.pdf<br/>Upload once and it displays here permanently.</div>
+      </div>
+    `;
+
+    const dz = document.getElementById('dropZone');
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault();
+      dz.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) uploadPdf(file);
+    });
+  }
+
+  async function checkPdfExists() {
+    try {
+      const r = await fetch(GUIDE_PATH, { method: 'HEAD' });
+      return r.ok;
+    } catch { return false; }
+  }
+
+  async function init() {
+    const exists = await checkPdfExists();
+    if (exists) {
+      renderViewer();
+    } else {
+      renderDropZone();
+    }
+  }
+
+  function handleFileSelect(input) {
+    const file = input.files[0];
+    if (file) uploadPdf(file);
+    input.value = '';
+  }
+
+  async function uploadPdf(file) {
+    if (file.type !== 'application/pdf') {
+      showToast('Please select a PDF file.', 'err');
+      return;
+    }
+    const btn = document.getElementById('uploadBtn');
+    const label = document.getElementById('uploadLabel');
+    btn.disabled = true;
+    label.textContent = 'Uploading…';
+
+    try {
+      const form = new FormData();
+      form.append('pdf', file);
+      const token = localStorage.getItem('vc_token') || '';
+      const res = await fetch('/api/upload-guide-pdf', {
+        method: 'POST',
+        headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+        body: form,
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || 'Upload failed');
+      }
+      btn.classList.add('success');
+      label.textContent = 'Uploaded ✓';
+      showToast('PDF uploaded successfully.', 'ok');
+      renderViewer();
+      setTimeout(() => { btn.classList.remove('success'); label.textContent = 'Replace PDF'; btn.disabled = false; }, 2000);
+    } catch (e) {
+      showToast(e.message || 'Upload failed — try again.', 'err');
+      btn.disabled = false;
+      label.textContent = 'Upload PDF';
+    }
+  }
+
+  init();
+
+  // ── Affiliate links ─────────────────────────────────────────────────────────
+
+  const sessionToken = localStorage.getItem('vc_token') || '';
+  const SH = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + sessionToken };
+
+  async function loadAffiliateLinks() {
+    const listEl  = document.getElementById('affiliateList');
+    const countEl = document.getElementById('affiliateCount');
+    try {
+      const r = await fetch('/api/v2/affiliates', { headers: SH });
+      const d = await r.json();
+      const affiliates = d.affiliates || [];
+      countEl.textContent = affiliates.length + ' affiliate' + (affiliates.length !== 1 ? 's' : '');
+      if (!affiliates.length) {
+        listEl.innerHTML = '<div class="links-empty">No affiliates found.</div>';
+        return;
+      }
+      listEl.innerHTML = affiliates.map(a => `
+        <div class="link-row">
+          <div class="link-name">
+            <div class="link-name-text">${a.name}</div>
+            <div class="link-code">${a.code}</div>
+          </div>
+          <div class="link-status ${a.active ? 'active' : 'inactive'}">${a.active ? 'Active' : 'Inactive'}</div>
+          <button class="copy-btn idle" id="btn-${a.code}" onclick="copyLink('${a.code}')">Copy Link</button>
+        </div>
+      `).join('');
+    } catch (e) {
+      countEl.textContent = 'Error';
+      listEl.innerHTML = `<div class="links-error">Could not load affiliates: ${e.message}</div>`;
+    }
+  }
+
+  async function copyLink(code) {
+    const btn = document.getElementById('btn-' + code);
+    if (!btn || btn.classList.contains('loading')) return;
+    btn.className = 'copy-btn loading';
+    btn.textContent = 'Getting…';
+    try {
+      const r = await fetch(`/api/v2/affiliates/${code}/onboarding-link`, { headers: SH });
+      const d = await r.json();
+      if (!d.link) throw new Error('No link returned');
+      await navigator.clipboard.writeText(d.link);
+      btn.className = 'copy-btn done';
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.className = 'copy-btn idle'; btn.textContent = 'Copy Link'; }, 2500);
+    } catch (e) {
+      btn.className = 'copy-btn idle';
+      btn.textContent = 'Copy Link';
+      showToast('Could not copy link: ' + e.message, 'err');
+    }
+  }
+
+  loadAffiliateLinks();
+
+  function switchStep(n) {
+    [1, 2].forEach(i => {
+      document.getElementById('tab' + i).classList.toggle('active', i === n);
+      document.getElementById('panel' + i).classList.toggle('active', i === n);
+      if (i < n) document.getElementById('tab' + i).classList.add('done');
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
+
+<script>
+  !function(){
+    var e=document,t=e.createElement("iframe");
+    window.addEventListener("message",function(e){
+      if(!e||!e.data||!e.data.height){return;}
+      t.height=(parseInt(e.data.height,10)+45)+"px"
+    },!1);
+    t.style.border="0";
+    t.style.width="100%";
+    t.style.borderRadius="8px";
+    t.id="client-connect-iframe";
+    t.src="https://api.sendible.com/api/v2/client_connect_widget.json?id=3456";
+    e.getElementById("client-connect-widget").appendChild(t);
+  }();
+</script>
+</body>
+</html>

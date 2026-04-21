@@ -11,6 +11,7 @@ import profileRoutes from './modules/profile/profileRoutes';
 import mediaRoutes from './modules/media/mediaRoutes';
 import adminRoutes from './modules/admin/adminRoutes';
 import trackingRoutes from './modules/tracking/trackingRoutes';
+import authRoutes from './modules/auth/authRoutes';
 import { startResumeParseWorker, stopResumeParseWorker } from './queues/workers/resumeParseWorker';
 import { startProfileExtractWorker, stopProfileExtractWorker } from './queues/workers/profileExtractWorker';
 import { startContentScoreWorker, stopContentScoreWorker } from './queues/workers/contentScoreWorker';
@@ -71,6 +72,9 @@ app.get('/v2/connect', (_req, res) => {
 // Tracking routes — public, no auth
 app.use('/track', trackingRoutes);
 
+// Auth routes — login, logout, me
+app.use('/', authRoutes);
+
 // API routes
 app.use('/v2/api/affiliate', profileRoutes);
 app.use('/v2/api/affiliate', mediaRoutes);
@@ -81,6 +85,27 @@ app.use('/v2/api/admin/keywords', keywordRoutes);
 app.use('/v2/api/admin/llm-presence', llmPresenceRoutes);
 app.use('/v2/api/admin/dashboard', dashboardRoutes);
 app.use('/v2/api/admin/intelligence', intelligenceRoutes);
+
+// Static frontend files
+const PUBLIC_DIR = path.join(__dirname, '../public');
+app.use(express.static(PUBLIC_DIR));
+
+// Page routes
+function sendPage(res: express.Response, file: string): void {
+  const p = path.join(PUBLIC_DIR, file);
+  if (fs.existsSync(p)) { res.sendFile(p); } else { res.status(404).send('Not found'); }
+}
+app.get('/',                    (_req, res) => sendPage(res, 'login.html'));
+app.get('/login',               (_req, res) => sendPage(res, 'login.html'));
+app.get('/affiliate',           (_req, res) => sendPage(res, 'affiliate.html'));
+app.get('/app',                 (_req, res) => sendPage(res, 'app.html'));
+app.get('/admin',               (_req, res) => sendPage(res, 'admin.html'));
+app.get('/connect',             (_req, res) => sendPage(res, 'connect.html'));
+app.get('/adhoc',               (_req, res) => sendPage(res, 'adhoc.html'));
+app.get('/forgot-password',     (_req, res) => sendPage(res, 'forgot-password.html'));
+app.get('/reset-password',      (_req, res) => sendPage(res, 'reset-password.html'));
+app.get('/privacy',             (_req, res) => sendPage(res, 'privacy.html'));
+app.get('/terms',               (_req, res) => sendPage(res, 'terms.html'));
 
 // 404 + error handler
 app.use(notFound);

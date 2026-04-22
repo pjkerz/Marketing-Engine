@@ -51,6 +51,10 @@ const EnvSchema = z.object({
   CREDS_MD_PATH: z.string().default('/Users/macmini/.openclaw/workspace/CREDS.md'),
   AFFILIATES_JSON_PATH: z.string().default('/Users/macmini/.openclaw/businesses/alphaboost/affiliates.json'),
 
+  // Comma-separated admin credentials: "user1:pass1,user2:pass2"
+  ADMIN_USERS: z.string().optional(),
+  CONSOLE_PASSWORD: z.string().optional(),
+
   // Make.com webhook — fires when content is approved for Sendible
   MAKE_WEBHOOK_URL: z.string().url().optional(),
 

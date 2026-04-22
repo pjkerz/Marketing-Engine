@@ -94,10 +94,31 @@ router.post('/api/login', (req: Request, res: Response) => {
     return;
   }
 
-  // Check TEAM_USER_* entries (leadership)
+  // Check ADMIN_USERS env var first (format: "user1:pass1,user2:pass2")
+  if (env.ADMIN_USERS) {
+    const adminUsers = env.ADMIN_USERS.split(',').map((entry) => {
+      const idx = entry.indexOf(':');
+      return { username: entry.slice(0, idx).trim(), password: entry.slice(idx + 1).trim() };
+    });
+    const adminMatch = adminUsers.find((u) => u.username === username && u.password === password);
+    if (adminMatch) {
+      const token = issueSessionToken({ username, role: 'admin' });
+      res.json({ ok: true, token, username, role: 'leadership' });
+      return;
+    }
+  }
+
+  // Check CONSOLE_PASSWORD env var
+  if (env.CONSOLE_PASSWORD && password === env.CONSOLE_PASSWORD) {
+    const token = issueSessionToken({ username, role: 'admin' });
+    res.json({ ok: true, token, username, role: 'leadership' });
+    return;
+  }
+
+  // Check TEAM_USER_* entries from CREDS.md (local dev fallback)
   const teamUsers = Object.entries(creds)
     .filter(([k]) => k.startsWith('TEAM_USER_'))
-    .map(([, v]) => { const [u, p] = v.split(':'); return { username: u, password: p }; });
+    .map(([, v]) => { const idx = v.indexOf(':'); return { username: v.slice(0, idx), password: v.slice(idx + 1) }; });
 
   const teamMatch = teamUsers.find((u) => u.username === username && u.password === password);
   if (teamMatch) {
@@ -106,7 +127,7 @@ router.post('/api/login', (req: Request, res: Response) => {
     return;
   }
 
-  // Check CONSOLE_PASSWORD (admin fallback)
+  // Check CONSOLE_PASSWORD from CREDS.md (local dev fallback)
   if (creds.CONSOLE_PASSWORD && password === creds.CONSOLE_PASSWORD) {
     const token = issueSessionToken({ username, role: 'admin' });
     res.json({ ok: true, token, username, role: 'leadership' });

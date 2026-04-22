@@ -87,10 +87,11 @@ async function login() {
     if (!r.ok) { e.textContent = d.error || 'Login failed.'; return; }
     if (rem) { localStorage.setItem('remembered_user', u); } else { localStorage.removeItem('remembered_user'); }
     localStorage.setItem('v2_affiliate_token', d.token);
+    localStorage.setItem('vc_token', d.token);
     localStorage.setItem('vc_username', d.username);
     localStorage.setItem('vc_role', d.role);
     if (d.affiliateCode) localStorage.setItem('affiliateCode', d.affiliateCode);
-    window.location.href = d.role === 'affiliate' ? '/affiliate' : '/app';
+    window.location.href = d.role === 'affiliate' ? '/affiliate' : '/admin';
   } catch { e.textContent = 'Connection error. Please try again.'; }
 }
 </script>

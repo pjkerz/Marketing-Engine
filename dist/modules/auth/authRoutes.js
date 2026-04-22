@@ -197,7 +197,7 @@ router.get('/api/me', auth_1.requireAuth, (req, res) => {
 });
 // GET /api/my/connected-platforms — stub for affiliate.html
 router.get('/api/my/connected-platforms', auth_1.requireAuth, (_req, res) => {
-    res.json({ platforms: {} });
+    res.json({ platforms: [] });
 });
 // GET /api/welcome — stub for affiliate.html
 router.get('/api/welcome', auth_1.requireAuth, (_req, res) => {

@@ -142,8 +142,8 @@ router.post('/api/login', (req, res) => {
     }
     res.status(401).json({ error: 'Invalid username or password' });
 });
-// POST /api/admin/verify-pin — PIN gate for admin.html
-router.post('/api/admin/verify-pin', auth_1.requireAuth, (req, res) => {
+// POST /api/admin/verify-pin — PIN gate for admin.html (no auth required, PIN is the factor)
+router.post('/api/admin/verify-pin', (req, res) => {
     const { pin } = req.body;
     const correctPin = (process.env.ADMIN_PIN || '0404').toString().trim();
     if (pin && pin.toString().trim() === correctPin) {

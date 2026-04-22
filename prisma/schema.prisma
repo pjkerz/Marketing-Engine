@@ -313,7 +313,7 @@ model ContentGenerationRun {
   id            String   @id @default(uuid())
   businessId    String
   affiliateId   String
-  profileId     String
+  profileId     String?
   channel       String   // linkedin | facebook | twitter | instagram | tiktok | reddit | discord | telegram | slack
   status        String   @default("pending") // pending | generating | scored | approved | dispatched | rejected | failed
   inputBrief    Json?
@@ -333,7 +333,7 @@ model ContentGenerationRun {
 
   business       Business         @relation(fields: [businessId], references: [id])
   affiliate      Affiliate        @relation(fields: [affiliateId], references: [id])
-  profile        AffiliateProfile @relation(fields: [profileId], references: [id])
+  profile        AffiliateProfile? @relation(fields: [profileId], references: [id])
   scores         ContentScore[]
   mediaAssets    ContentMediaAsset[]
   mediaJobs      MediaGenerationJob[]

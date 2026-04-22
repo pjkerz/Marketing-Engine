@@ -55,6 +55,7 @@ const personalizationEngine_1 = require("../personalization/personalizationEngin
 const env_1 = require("../../config/env");
 const planGenerator_1 = require("../../lib/planGenerator");
 const contentScorer_1 = require("../scoring/contentScorer");
+const bokReader_1 = require("../../lib/bokReader");
 const router = (0, express_1.Router)();
 async function findAffiliateScoped(prisma, code, businessId) {
     const affiliate = await prisma.affiliate.findFirst({ where: { code, businessId } });
@@ -262,53 +263,66 @@ router.post('/:code/content/generate', auth_1.requireAuth, rbac_1.requireOwnAffi
     try {
         const prisma = (0, prisma_1.getPrisma)();
         const affiliate = await findAffiliateScoped(prisma, req.params["code"], req.actor.businessId);
+        // Profile is optional — used for personalization if available
         const profile = await prisma.affiliateProfile.findFirst({
             where: { affiliateId: affiliate.id, status: 'active' },
             orderBy: { version: 'desc' },
         });
-        if (!profile)
-            throw new errorHandler_1.AppError('NOT_FOUND', 'No active profile found. Please complete your profile first.', 404);
         const body = req.body;
-        const channels = body.channels ?? profile.platforms ?? ['linkedin'];
+        const channels = body.channels ?? profile?.platforms ?? ['linkedin'];
         const brief = body.brief ?? '';
-        // Generate personalized content for each channel
-        const runs = [];
-        // Get optimisation rules for this business
+        const slotId = body.slotId;
+        // Get BOK context — pull relevant podcast knowledge for this brief/channel
+        const business = await prisma.business.findUnique({ where: { id: affiliate.businessId }, select: { slug: true } });
+        const bokTopic = brief || channels.join(' ') + ' career growth AI professional';
+        const bokContext = (0, bokReader_1.readBokChunks)(business?.slug ?? 'alphaboost', bokTopic);
+        // Get business config for brand voice
+        const config = await prisma.businessConfig.findUnique({ where: { businessId: affiliate.businessId } });
+        const brandName = config?.brandName ?? 'AlphaNoetics';
+        const brandVoice = config?.brandVoice ?? 'authentic, direct, and insight-driven';
+        // Get optimisation hints
         const optimisationHints = await (0, personalizationEngine_1.applyOptimisationToGeneration)(affiliate.businessId, { channel: channels[0] ?? 'linkedin' });
+        const { llmClient } = await Promise.resolve().then(() => __importStar(require('../../integrations/llm/llmClient')));
+        const runs = [];
         for (const channel of channels) {
-            // Generate base content via LLM
-            const { llmClient } = await Promise.resolve().then(() => __importStar(require('../../integrations/llm/llmClient')));
             const formatHint = optimisationHints.preferredFormat ? ` Use ${optimisationHints.preferredFormat} format.` : '';
+            const systemPrompt = [
+                `You are a professional social media content writer for ${brandName}, an AI career acceleration platform.`,
+                `Brand voice: ${brandVoice}.`,
+                bokContext ? `\nUse the following real insights from our podcast knowledge base to ground your content in genuine expertise:\n\n${bokContext}` : '',
+                `\nWrite a ${channel} post that is authentic, insightful, and valuable to career-focused professionals.`,
+                `Do NOT use generic motivational fluff or spam hashtags.`,
+                profile ? `The content is for an affiliate named ${affiliate.name} (code: ${affiliate.code}).` : '',
+                formatHint,
+            ].filter(Boolean).join('\n');
+            const userPrompt = brief
+                ? `Write a compelling ${channel} post based on this brief: ${brief}`
+                : `Write a compelling ${channel} post that highlights real insights about AI career acceleration and professional growth. Draw from the podcast knowledge provided.`;
             const baseContent = await llmClient.complete({
                 model: env_1.env.GROQ_MODEL_CONTENT,
-                systemPrompt: `You are a professional content writer for AlphaBoost, an AI career acceleration platform. Write a ${channel} post that helps career-focused professionals. Be authentic, insightful, and valuable. No hashtag spam. No generic motivational fluff.${formatHint}`,
-                userPrompt: brief || `Write a compelling ${channel} post about AI career acceleration and professional growth. Focus on the practical value of AlphaBoost.`,
-                maxTokens: 512,
+                systemPrompt,
+                userPrompt,
+                maxTokens: 600,
                 responseFormat: 'text',
                 requestId: req.requestId,
             });
-            // Personalize
-            const personalized = (0, personalizationEngine_1.personalize)({
-                baseContent,
-                channel,
-                affiliateCode: req.params["code"],
-                profile,
-            });
-            // Save run
+            const personalized = profile
+                ? (0, personalizationEngine_1.personalize)({ baseContent, channel, affiliateCode: req.params["code"], profile })
+                : baseContent;
             const run = await prisma.contentGenerationRun.create({
                 data: {
                     businessId: affiliate.businessId,
                     affiliateId: affiliate.id,
-                    profileId: profile.id,
+                    profileId: profile?.id ?? undefined,
                     channel,
                     status: 'generating',
-                    inputBrief: { brief, channels },
+                    inputBrief: { brief, channels, bokUsed: !!bokContext },
                     outputContent: personalized,
-                    personalizationSummary: {
+                    personalizationSummary: profile ? {
                         role: profile.role,
                         painPoint: profile.painPoint,
                         ctaStrength: profile.ctaStrength,
-                    },
+                    } : { bokGrounded: true },
                 },
             });
             // Enqueue scoring (non-blocking)
@@ -322,6 +336,13 @@ router.post('/:code/content/generate', auth_1.requireAuth, rbac_1.requireOwnAffi
                 where: { id: run.id },
                 data: { status: 'scored' },
             });
+            // If a calendar slot was specified, link this run to it
+            if (slotId) {
+                await prisma.contentSlot.update({
+                    where: { id: slotId },
+                    data: { contentRunId: run.id, status: 'draft' },
+                });
+            }
             runs.push({ runId: run.id, channel });
         }
         res.status(201).json({ runs });

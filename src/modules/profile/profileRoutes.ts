@@ -16,6 +16,7 @@ import { personalize, applyOptimisationToGeneration } from '../personalization/p
 import { env } from '../../config/env';
 import { generateWeekPlan, getMondayOf } from '../../lib/planGenerator';
 import { scoreContent } from '../scoring/contentScorer';
+import { readBokChunks } from '../../lib/bokReader';
 
 const router = Router();
 
@@ -292,58 +293,77 @@ router.post(
       const prisma = getPrisma();
       const affiliate = await findAffiliateScoped(prisma, req.params["code"] as string, req.actor!.businessId);
 
+      // Profile is optional — used for personalization if available
       const profile = await prisma.affiliateProfile.findFirst({
         where: { affiliateId: affiliate.id, status: 'active' },
         orderBy: { version: 'desc' },
       });
-      if (!profile) throw new AppError('NOT_FOUND', 'No active profile found. Please complete your profile first.', 404);
 
-      const body = req.body as { channels?: string[]; brief?: string };
-      const channels = body.channels ?? profile.platforms ?? ['linkedin'];
+      const body = req.body as { channels?: string[]; brief?: string; slotId?: string };
+      const channels = body.channels ?? profile?.platforms ?? ['linkedin'];
       const brief = body.brief ?? '';
+      const slotId = body.slotId;
 
-      // Generate personalized content for each channel
-      const runs: Array<{ runId: string; channel: string }> = [];
+      // Get BOK context — pull relevant podcast knowledge for this brief/channel
+      const business = await prisma.business.findUnique({ where: { id: affiliate.businessId }, select: { slug: true } });
+      const bokTopic = brief || channels.join(' ') + ' career growth AI professional';
+      const bokContext = readBokChunks(business?.slug ?? 'alphaboost', bokTopic);
 
-      // Get optimisation rules for this business
+      // Get business config for brand voice
+      const config = await prisma.businessConfig.findUnique({ where: { businessId: affiliate.businessId } });
+      const brandName = config?.brandName ?? 'AlphaNoetics';
+      const brandVoice = config?.brandVoice ?? 'authentic, direct, and insight-driven';
+
+      // Get optimisation hints
       const optimisationHints = await applyOptimisationToGeneration(affiliate.businessId, { channel: channels[0] ?? 'linkedin' });
 
+      const { llmClient } = await import('../../integrations/llm/llmClient');
+      const runs: Array<{ runId: string; channel: string }> = [];
+
       for (const channel of channels) {
-        // Generate base content via LLM
-        const { llmClient } = await import('../../integrations/llm/llmClient');
         const formatHint = optimisationHints.preferredFormat ? ` Use ${optimisationHints.preferredFormat} format.` : '';
+
+        const systemPrompt = [
+          `You are a professional social media content writer for ${brandName}, an AI career acceleration platform.`,
+          `Brand voice: ${brandVoice}.`,
+          bokContext ? `\nUse the following real insights from our podcast knowledge base to ground your content in genuine expertise:\n\n${bokContext}` : '',
+          `\nWrite a ${channel} post that is authentic, insightful, and valuable to career-focused professionals.`,
+          `Do NOT use generic motivational fluff or spam hashtags.`,
+          profile ? `The content is for an affiliate named ${affiliate.name} (code: ${affiliate.code}).` : '',
+          formatHint,
+        ].filter(Boolean).join('\n');
+
+        const userPrompt = brief
+          ? `Write a compelling ${channel} post based on this brief: ${brief}`
+          : `Write a compelling ${channel} post that highlights real insights about AI career acceleration and professional growth. Draw from the podcast knowledge provided.`;
+
         const baseContent = await llmClient.complete({
           model: env.GROQ_MODEL_CONTENT,
-          systemPrompt: `You are a professional content writer for AlphaBoost, an AI career acceleration platform. Write a ${channel} post that helps career-focused professionals. Be authentic, insightful, and valuable. No hashtag spam. No generic motivational fluff.${formatHint}`,
-          userPrompt: brief || `Write a compelling ${channel} post about AI career acceleration and professional growth. Focus on the practical value of AlphaBoost.`,
-          maxTokens: 512,
+          systemPrompt,
+          userPrompt,
+          maxTokens: 600,
           responseFormat: 'text',
           requestId: req.requestId,
         });
 
-        // Personalize
-        const personalized = personalize({
-          baseContent,
-          channel,
-          affiliateCode: req.params["code"] as string,
-          profile,
-        });
+        const personalized = profile
+          ? personalize({ baseContent, channel, affiliateCode: req.params["code"] as string, profile })
+          : baseContent;
 
-        // Save run
         const run = await prisma.contentGenerationRun.create({
           data: {
             businessId: affiliate.businessId,
             affiliateId: affiliate.id,
-            profileId: profile.id,
+            profileId: profile?.id ?? undefined,
             channel,
             status: 'generating',
-            inputBrief: { brief, channels },
+            inputBrief: { brief, channels, bokUsed: !!bokContext },
             outputContent: personalized,
-            personalizationSummary: {
+            personalizationSummary: profile ? {
               role: profile.role,
               painPoint: profile.painPoint,
               ctaStrength: profile.ctaStrength,
-            },
+            } : { bokGrounded: true },
           },
         });
 
@@ -359,6 +379,14 @@ router.post(
           where: { id: run.id },
           data: { status: 'scored' },
         });
+
+        // If a calendar slot was specified, link this run to it
+        if (slotId) {
+          await prisma.contentSlot.update({
+            where: { id: slotId },
+            data: { contentRunId: run.id, status: 'draft' },
+          });
+        }
 
         runs.push({ runId: run.id, channel });
       }

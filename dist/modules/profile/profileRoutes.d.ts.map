@@ -1,1 +1,1 @@
-{"version":3,"file":"profileRoutes.d.ts","sourceRoot":"","sources":["../../../src/modules/profile/profileRoutes.ts"],"names":[],"mappings":"AAmBA,QAAA,MAAM,MAAM,4CAAW,CAAC;AAygCxB,wBAAsB,mBAAmB,CAAC,aAAa,EAAE,MAAM,EAAE,OAAO,EAAE,MAAM,GAAG,OAAO,CAAC,IAAI,CAAC,CAmD/F;AAgBD,eAAe,MAAM,CAAC"}
+{"version":3,"file":"profileRoutes.d.ts","sourceRoot":"","sources":["../../../src/modules/profile/profileRoutes.ts"],"names":[],"mappings":"AAoBA,QAAA,MAAM,MAAM,4CAAW,CAAC;AAoiCxB,wBAAsB,mBAAmB,CAAC,aAAa,EAAE,MAAM,EAAE,OAAO,EAAE,MAAM,GAAG,OAAO,CAAC,IAAI,CAAC,CAmD/F;AAgBD,eAAe,MAAM,CAAC"}

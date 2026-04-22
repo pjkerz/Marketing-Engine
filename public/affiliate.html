@@ -1150,6 +1150,7 @@ function renderContent(runs) {
         <button class="btn btn-ghost btn-sm" onclick="saveDraft('${run.id}')">Save Draft</button>
         <button class="btn btn-green btn-sm" id="sbm-${run.id}" onclick="submitRun('${run.id}')" ${over?'disabled':''}>Submit for Approval</button>
         <button class="media-btn" style="margin-left:8px" onclick="openRunMedia('${run.id}')">📎 Media</button>
+        <button class="btn btn-ghost btn-sm" style="margin-left:8px;color:#64748b" onclick="regenerateContent('${run.channel}')">↺ Regenerate</button>
       `;
     }
 
@@ -1207,7 +1208,90 @@ function openRunMedia(runId) {
 }
 
 function generateNew() {
-  switchTab('calendar');
+  openGenerateModal();
+}
+
+function regenerateContent(channel) {
+  openGenerateModal(channel);
+}
+
+function openGenerateModal(preselectedChannel) {
+  const PLATFORMS = ['linkedin','instagram','facebook','youtube','twitter','reddit','discord','tiktok'];
+  const PLAT_LABELS = { linkedin:'LinkedIn', instagram:'Instagram', facebook:'Facebook', youtube:'YouTube', twitter:'X / Twitter', reddit:'Reddit', discord:'Discord', tiktok:'TikTok' };
+
+  const checkboxes = PLATFORMS.map(p => `
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;border:1px solid ${p===(preselectedChannel||'linkedin')?'#00C8FF':'#1e293b'};border-radius:8px;transition:border-color .15s" id="plat-lbl-${p}">
+      <input type="checkbox" id="plat-${p}" style="accent-color:#00C8FF" ${p===(preselectedChannel||'linkedin')?'checked':''} onchange="updatePlatLabel('${p}')">
+      <span style="font-family:'DM Mono',monospace;font-size:11px;color:#94a3b8">${PLAT_LABELS[p]}</span>
+    </label>`).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'gen-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `
+    <div style="background:#111827;border:1px solid #1e293b;border-radius:16px;padding:32px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:#f1f5f9">✦ Generate Content</div>
+        <button onclick="closeGenerateModal()" style="background:none;border:none;color:#64748b;font-size:20px;cursor:pointer">×</button>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#64748b;letter-spacing:.1em;margin-bottom:10px">SELECT PLATFORMS</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:24px">
+        ${checkboxes}
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:#64748b;letter-spacing:.1em;margin-bottom:8px">BRIEF <span style="color:#334155">(optional)</span></div>
+      <textarea id="gen-brief" placeholder="Describe the topic, angle, or message you want — or leave blank to let the AI draw from the podcast knowledge base." style="width:100%;background:#020617;border:1px solid #1e293b;color:#f1f5f9;padding:12px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;resize:vertical;min-height:90px;outline:none;margin-bottom:20px"></textarea>
+      <div style="font-size:11px;color:#475569;font-family:'DM Mono',monospace;margin-bottom:20px">Content is grounded in AlphaNoetics podcast knowledge. Attach images/videos from Zoho after generation.</div>
+      <button id="gen-btn" onclick="submitGenerate()" style="width:100%;background:linear-gradient(135deg,#0284C7,#00C8FF);color:#020617;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Syne',sans-serif">GENERATE →</button>
+      <div id="gen-status" style="text-align:center;font-size:12px;color:#64748b;font-family:'DM Mono',monospace;margin-top:14px;min-height:18px"></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeGenerateModal(); });
+}
+
+function updatePlatLabel(p) {
+  const lbl = document.getElementById('plat-lbl-' + p);
+  const cb = document.getElementById('plat-' + p);
+  if (lbl && cb) lbl.style.borderColor = cb.checked ? '#00C8FF' : '#1e293b';
+}
+
+function closeGenerateModal() {
+  const el = document.getElementById('gen-overlay');
+  if (el) el.remove();
+}
+
+async function submitGenerate() {
+  const PLATFORMS = ['linkedin','instagram','facebook','youtube','twitter','reddit','discord','tiktok'];
+  const channels = PLATFORMS.filter(p => {
+    const cb = document.getElementById('plat-' + p);
+    return cb && cb.checked;
+  });
+  if (!channels.length) { document.getElementById('gen-status').textContent = 'Select at least one platform.'; return; }
+
+  const brief = (document.getElementById('gen-brief').value || '').trim();
+  const btn = document.getElementById('gen-btn');
+  const status = document.getElementById('gen-status');
+
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+  status.textContent = 'Drawing from podcast knowledge base…';
+
+  try {
+    const r = await fetch(`${V2}/v2/api/affiliate/${affiliateCode}/content/generate`, {
+      method: 'POST',
+      headers: { ...V2H(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channels, brief }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message || d.error || 'Generation failed');
+    status.textContent = `✓ Generated ${d.runs?.length ?? channels.length} piece${(d.runs?.length??channels.length)===1?'':'s'}. Loading…`;
+    await new Promise(res => setTimeout(res, 800));
+    closeGenerateModal();
+    await loadContent();
+  } catch(e) {
+    status.textContent = e.message;
+    btn.disabled = false;
+    btn.textContent = 'GENERATE →';
+  }
 }
 
 // ── STATS ─────────────────────────────────────────────────────────────────────

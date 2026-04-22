@@ -68,6 +68,9 @@ router.post('/api/login', (req: Request, res: Response) => {
     return;
   }
 
+  // Temporary debug — remove after confirming auth works
+  console.log('[login] attempt', { username, hasAdminUsers: !!env.ADMIN_USERS, hasConsolePassword: !!env.CONSOLE_PASSWORD });
+
   const affiliates = readAffiliates();
   const creds = readCreds();
 

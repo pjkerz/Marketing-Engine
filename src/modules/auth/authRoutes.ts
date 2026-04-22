@@ -197,9 +197,25 @@ router.get('/api/me', requireAuth, (req: Request, res: Response) => {
   });
 });
 
-// GET /api/my/connected-platforms — stub for affiliate.html
-router.get('/api/my/connected-platforms', requireAuth, (_req: Request, res: Response) => {
-  res.json({ platforms: [] });
+// GET /api/my/connected-platforms — returns platforms with active DB connections
+router.get('/api/my/connected-platforms', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const actor = req.actor;
+    if (!actor?.affiliateCode) { res.json({ platforms: [] }); return; }
+
+    const prisma = getPrisma();
+    const affiliate = await prisma.affiliate.findUnique({ where: { code: actor.affiliateCode } });
+    if (!affiliate) { res.json({ platforms: [] }); return; }
+
+    const connections = await prisma.platformConnection.findMany({
+      where: { affiliateId: affiliate.id },
+      select: { platform: true, connectedAt: true },
+    });
+
+    res.json({ platforms: connections.map(c => ({ id: c.platform, connectedAt: c.connectedAt })) });
+  } catch {
+    res.json({ platforms: [] });
+  }
 });
 
 // GET /api/welcome — stub for affiliate.html

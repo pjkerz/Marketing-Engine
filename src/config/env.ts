@@ -67,10 +67,29 @@ const EnvSchema = z.object({
   TRACKING_PIXEL_SECRET: z.string().optional(),
   SESSION_STITCH_SECRET: z.string().optional(),
 
-  // Google OAuth (Search Console)
+  // Google OAuth (Search Console + YouTube)
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   GSC_SITE_URL: z.string().default('https://alphanoetic.me/'),
+
+  // LinkedIn OAuth
+  LI_CLIENT_ID: z.string().optional(),
+  LI_CLIENT_SECRET: z.string().optional(),
+
+  // Facebook / Instagram OAuth
+  FB_APP_ID: z.string().optional(),
+  FB_APP_SECRET: z.string().optional(),
+
+  // X / Twitter OAuth 2.0 (PKCE)
+  X_CLIENT_ID: z.string().optional(),
+  X_CLIENT_SECRET: z.string().optional(),
+
+  // Reddit OAuth
+  REDDIT_CLIENT_ID: z.string().optional(),
+  REDDIT_CLIENT_SECRET: z.string().optional(),
+
+  // Token encryption key (32-byte hex — can share V2_ENCRYPTION_KEY or use separate)
+  OAUTH_TOKEN_SECRET: z.string().optional(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

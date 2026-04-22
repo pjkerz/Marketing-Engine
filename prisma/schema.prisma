@@ -210,15 +210,29 @@ model Affiliate {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  business         Business             @relation(fields: [businessId], references: [id])
-  profile          AffiliateProfile[]
-  assets           ProfileAsset[]
-  resumeJobs       ResumeProcessingJob[]
-  generationRuns   ContentGenerationRun[]
-  conversionEvents ConversionEvent[]
-  mediaJobs        MediaGenerationJob[]
+  business             Business             @relation(fields: [businessId], references: [id])
+  profile              AffiliateProfile[]
+  assets               ProfileAsset[]
+  resumeJobs           ResumeProcessingJob[]
+  generationRuns       ContentGenerationRun[]
+  conversionEvents     ConversionEvent[]
+  mediaJobs            MediaGenerationJob[]
+  platformConnections  PlatformConnection[]
 
   @@map("affiliates")
+}
+
+model PlatformConnection {
+  id            String   @id @default(uuid())
+  affiliateId   String
+  affiliate     Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  platform      String   // "linkedin" | "facebook" | "twitter" | "youtube" | "reddit"
+  tokens        Json     // encrypted token blob (access_token, refresh_token, etc.)
+  connectedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([affiliateId, platform])
+  @@map("platform_connections")
 }
 
 model AffiliateProfile {

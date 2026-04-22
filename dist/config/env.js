@@ -79,6 +79,9 @@ const EnvSchema = zod_1.z.object({
     ZOHO_AFFILIATES_FOLDER_ID: zod_1.z.string().min(1),
     CREDS_MD_PATH: zod_1.z.string().default('/Users/macmini/.openclaw/workspace/CREDS.md'),
     AFFILIATES_JSON_PATH: zod_1.z.string().default('/Users/macmini/.openclaw/businesses/alphaboost/affiliates.json'),
+    // Comma-separated admin credentials: "user1:pass1,user2:pass2"
+    ADMIN_USERS: zod_1.z.string().optional(),
+    CONSOLE_PASSWORD: zod_1.z.string().optional(),
     // Make.com webhook — fires when content is approved for Sendible
     MAKE_WEBHOOK_URL: zod_1.z.string().url().optional(),
     // Resend email sending

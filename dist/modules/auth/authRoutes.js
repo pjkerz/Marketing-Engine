@@ -81,6 +81,8 @@ router.post('/api/login', (req, res) => {
         res.status(400).json({ error: 'username and password required' });
         return;
     }
+    // Temporary debug — remove after confirming auth works
+    console.log('[login] attempt', { username, hasAdminUsers: !!env_1.env.ADMIN_USERS, hasConsolePassword: !!env_1.env.CONSOLE_PASSWORD });
     const affiliates = readAffiliates();
     const creds = readCreds();
     // Check affiliate users
@@ -103,17 +105,36 @@ router.post('/api/login', (req, res) => {
         });
         return;
     }
-    // Check TEAM_USER_* entries (leadership)
+    // Check ADMIN_USERS env var first (format: "user1:pass1,user2:pass2")
+    if (env_1.env.ADMIN_USERS) {
+        const adminUsers = env_1.env.ADMIN_USERS.split(',').map((entry) => {
+            const idx = entry.indexOf(':');
+            return { username: entry.slice(0, idx).trim(), password: entry.slice(idx + 1).trim() };
+        });
+        const adminMatch = adminUsers.find((u) => u.username === username && u.password === password);
+        if (adminMatch) {
+            const token = issueSessionToken({ username, role: 'admin' });
+            res.json({ ok: true, token, username, role: 'leadership' });
+            return;
+        }
+    }
+    // Check CONSOLE_PASSWORD env var
+    if (env_1.env.CONSOLE_PASSWORD && password === env_1.env.CONSOLE_PASSWORD) {
+        const token = issueSessionToken({ username, role: 'admin' });
+        res.json({ ok: true, token, username, role: 'leadership' });
+        return;
+    }
+    // Check TEAM_USER_* entries from CREDS.md (local dev fallback)
     const teamUsers = Object.entries(creds)
         .filter(([k]) => k.startsWith('TEAM_USER_'))
-        .map(([, v]) => { const [u, p] = v.split(':'); return { username: u, password: p }; });
+        .map(([, v]) => { const idx = v.indexOf(':'); return { username: v.slice(0, idx), password: v.slice(idx + 1) }; });
     const teamMatch = teamUsers.find((u) => u.username === username && u.password === password);
     if (teamMatch) {
         const token = issueSessionToken({ username, role: 'admin' });
         res.json({ ok: true, token, username, role: 'leadership' });
         return;
     }
-    // Check CONSOLE_PASSWORD (admin fallback)
+    // Check CONSOLE_PASSWORD from CREDS.md (local dev fallback)
     if (creds.CONSOLE_PASSWORD && password === creds.CONSOLE_PASSWORD) {
         const token = issueSessionToken({ username, role: 'admin' });
         res.json({ ok: true, token, username, role: 'leadership' });

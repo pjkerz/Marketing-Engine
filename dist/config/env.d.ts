@@ -19,6 +19,8 @@ export declare const env: {
     CREDS_MD_PATH: string;
     AFFILIATES_JSON_PATH: string;
     EMAIL_FROM: string;
+    ADMIN_USERS?: string | undefined;
+    CONSOLE_PASSWORD?: string | undefined;
     MAKE_WEBHOOK_URL?: string | undefined;
     RESEND_API_KEY?: string | undefined;
     RESEND_WEBHOOK_SECRET?: string | undefined;

@@ -69,6 +69,7 @@ const llmPresenceRoutes_1 = __importDefault(require("./modules/llmPresence/llmPr
 const dashboardRoutes_1 = __importDefault(require("./modules/dashboard/dashboardRoutes"));
 const intelligenceRoutes_1 = __importDefault(require("./modules/intelligence/intelligenceRoutes"));
 const compatRoutes_1 = __importDefault(require("./modules/compat/compatRoutes"));
+const gscRoutes_1 = __importDefault(require("./modules/gsc/gscRoutes"));
 const dashboardWorker_1 = require("./queues/workers/dashboardWorker");
 const redis_1 = require("./lib/redis");
 const prisma_1 = require("./lib/prisma");
@@ -119,6 +120,8 @@ app.use('/v2/api/admin/dashboard', dashboardRoutes_1.default);
 app.use('/v2/api/admin/intelligence', intelligenceRoutes_1.default);
 // Legacy /api/* compat bridge (admin.html v1 paths → v2 implementations)
 app.use('/', compatRoutes_1.default);
+// Google Search Console OAuth + data routes
+app.use('/', gscRoutes_1.default);
 // Static frontend files
 const PUBLIC_DIR = path.join(__dirname, '../public');
 app.use(express_1.default.static(PUBLIC_DIR));

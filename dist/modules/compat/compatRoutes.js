@@ -421,15 +421,5 @@ router.get('/api/bok/download', auth_1.requireAuth, (_req, res) => {
         res.status(404).json({ error: 'BOK file not found' });
     }
 });
-// ── /api/gsc/* — Google Search Console (stub — needs OAuth setup) ──────────────
-router.get('/api/gsc/status', auth_1.requireAuth, requireAdmin, (_req, res) => {
-    res.json({ connected: false, message: 'Google Search Console not configured. Add GSC OAuth credentials to enable.' });
-});
-router.get('/api/gsc/search-analytics', auth_1.requireAuth, requireAdmin, (_req, res) => {
-    res.json({ rows: [], message: 'GSC not configured' });
-});
-router.get('/api/gsc/pages', auth_1.requireAuth, requireAdmin, (_req, res) => {
-    res.json({ rows: [], message: 'GSC not configured' });
-});
 exports.default = router;
 //# sourceMappingURL=compatRoutes.js.map

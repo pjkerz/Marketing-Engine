@@ -53,6 +53,7 @@ model BusinessConfig {
   pricingPageUrl  String?
   cmsWebhookUrl   String?  // SEO content publish webhook
   autoApply       Boolean  @default(false) // AI optimisation auto-apply
+  gscTokens       Json?    // Google Search Console OAuth tokens
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

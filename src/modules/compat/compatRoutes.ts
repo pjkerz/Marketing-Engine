@@ -9,7 +9,6 @@ import { Router, Request, Response, NextFunction } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
 import { requireAuth } from '../../middleware/auth';
-import { requireRole } from '../../middleware/rbac';
 import { getPrisma } from '../../lib/prisma';
 import { env } from '../../config/env';
 import { ALPHABOOST_BUSINESS_ID } from '../../middleware/auth';
@@ -390,19 +389,6 @@ router.get('/api/bok/download', requireAuth, (_req: Request, res: Response) => {
   } else {
     res.status(404).json({ error: 'BOK file not found' });
   }
-});
-
-// ── /api/gsc/* — Google Search Console (stub — needs OAuth setup) ──────────────
-router.get('/api/gsc/status', requireAuth, requireAdmin, (_req: Request, res: Response) => {
-  res.json({ connected: false, message: 'Google Search Console not configured. Add GSC OAuth credentials to enable.' });
-});
-
-router.get('/api/gsc/search-analytics', requireAuth, requireAdmin, (_req: Request, res: Response) => {
-  res.json({ rows: [], message: 'GSC not configured' });
-});
-
-router.get('/api/gsc/pages', requireAuth, requireAdmin, (_req: Request, res: Response) => {
-  res.json({ rows: [], message: 'GSC not configured' });
 });
 
 export default router;

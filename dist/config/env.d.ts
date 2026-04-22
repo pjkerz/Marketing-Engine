@@ -19,6 +19,7 @@ export declare const env: {
     CREDS_MD_PATH: string;
     AFFILIATES_JSON_PATH: string;
     EMAIL_FROM: string;
+    GSC_SITE_URL: string;
     ADMIN_USERS?: string | undefined;
     CONSOLE_PASSWORD?: string | undefined;
     MAKE_WEBHOOK_URL?: string | undefined;
@@ -26,5 +27,7 @@ export declare const env: {
     RESEND_WEBHOOK_SECRET?: string | undefined;
     TRACKING_PIXEL_SECRET?: string | undefined;
     SESSION_STITCH_SECRET?: string | undefined;
+    GOOGLE_CLIENT_ID?: string | undefined;
+    GOOGLE_CLIENT_SECRET?: string | undefined;
 };
 //# sourceMappingURL=env.d.ts.map

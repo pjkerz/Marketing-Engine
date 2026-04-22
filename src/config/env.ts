@@ -66,6 +66,11 @@ const EnvSchema = z.object({
   // Tracking pixel
   TRACKING_PIXEL_SECRET: z.string().optional(),
   SESSION_STITCH_SECRET: z.string().optional(),
+
+  // Google OAuth (Search Console)
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  GSC_SITE_URL: z.string().default('https://alphanoetic.me/'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

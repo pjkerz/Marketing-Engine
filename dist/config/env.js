@@ -91,6 +91,10 @@ const EnvSchema = zod_1.z.object({
     // Tracking pixel
     TRACKING_PIXEL_SECRET: zod_1.z.string().optional(),
     SESSION_STITCH_SECRET: zod_1.z.string().optional(),
+    // Google OAuth (Search Console)
+    GOOGLE_CLIENT_ID: zod_1.z.string().optional(),
+    GOOGLE_CLIENT_SECRET: zod_1.z.string().optional(),
+    GSC_SITE_URL: zod_1.z.string().default('https://alphanoetic.me/'),
 });
 const parsed = EnvSchema.safeParse(process.env);
 if (!parsed.success) {

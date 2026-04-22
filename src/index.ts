@@ -31,6 +31,7 @@ import llmPresenceRoutes from './modules/llmPresence/llmPresenceRoutes';
 import dashboardRoutes from './modules/dashboard/dashboardRoutes';
 import intelligenceRoutes from './modules/intelligence/intelligenceRoutes';
 import compatRoutes from './modules/compat/compatRoutes';
+import gscRoutes from './modules/gsc/gscRoutes';
 import { startDashboardWorker, stopDashboardWorker } from './queues/workers/dashboardWorker';
 import { closeRedis } from './lib/redis';
 import { closePrisma } from './lib/prisma';
@@ -89,6 +90,9 @@ app.use('/v2/api/admin/intelligence', intelligenceRoutes);
 
 // Legacy /api/* compat bridge (admin.html v1 paths → v2 implementations)
 app.use('/', compatRoutes);
+
+// Google Search Console OAuth + data routes
+app.use('/', gscRoutes);
 
 // Static frontend files
 const PUBLIC_DIR = path.join(__dirname, '../public');

@@ -50,7 +50,7 @@ router.post(
   '/affiliates',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const body = req.body as { code: string; name: string; email: string };
+      const body = req.body as { code: string; name: string; email: string; password?: string };
       if (!body.code || !body.name || !body.email) {
         throw new AppError('NOT_FOUND', 'code, name, and email are required.', 422);
       }
@@ -62,7 +62,7 @@ router.post(
 
       const businessId = req.actor!.businessId;
       const affiliate = await prisma.affiliate.create({
-        data: { businessId, code: body.code, name: body.name, email: body.email },
+        data: { businessId, code: body.code, name: body.name, email: body.email, password: body.password || null },
       });
 
       // Create initial profile
@@ -71,7 +71,7 @@ router.post(
       });
 
       const onboardingToken = issueOnboardingToken(body.code, businessId);
-      const onboardingLink = `https://alphaboost.ngrok.app/v2/connect?token=${onboardingToken}`;
+      const onboardingLink = `${process.env.APP_URL || 'https://alphanoetic.me'}/v2/connect?token=${onboardingToken}`;
 
       await prisma.auditLog.create({
         data: {

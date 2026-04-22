@@ -86,14 +86,14 @@ router.post('/affiliates', async (req, res, next) => {
         // Note: code is globally unique so no businessId filter needed here
         const businessId = req.actor.businessId;
         const affiliate = await prisma.affiliate.create({
-            data: { businessId, code: body.code, name: body.name, email: body.email },
+            data: { businessId, code: body.code, name: body.name, email: body.email, password: body.password || null },
         });
         // Create initial profile
         await prisma.affiliateProfile.create({
             data: { affiliateId: affiliate.id, source: 'manual', status: 'active', version: 1 },
         });
         const onboardingToken = (0, auth_1.issueOnboardingToken)(body.code, businessId);
-        const onboardingLink = `https://alphaboost.ngrok.app/v2/connect?token=${onboardingToken}`;
+        const onboardingLink = `${process.env.APP_URL || 'https://alphanoetic.me'}/v2/connect?token=${onboardingToken}`;
         await prisma.auditLog.create({
             data: {
                 actorType: 'admin',

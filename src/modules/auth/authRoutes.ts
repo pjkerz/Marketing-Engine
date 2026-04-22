@@ -4,6 +4,7 @@ import * as jwt from 'jsonwebtoken';
 import { env } from '../../config/env';
 import { requireAuth } from '../../middleware/auth';
 import { ALPHABOOST_BUSINESS_ID } from '../../middleware/auth';
+import { getPrisma } from '../../lib/prisma';
 
 const router = Router();
 
@@ -61,7 +62,7 @@ function issueSessionToken(payload: {
 }
 
 // POST /api/login
-router.post('/api/login', (req: Request, res: Response) => {
+router.post('/api/login', async (req: Request, res: Response) => {
   const { username, password } = req.body as { username?: string; password?: string };
   if (!username || !password) {
     res.status(400).json({ error: 'username and password required' });
@@ -74,7 +75,31 @@ router.post('/api/login', (req: Request, res: Response) => {
   const affiliates = readAffiliates();
   const creds = readCreds();
 
-  // Check affiliate users
+  // Check affiliate users in database first
+  try {
+    const prisma = getPrisma();
+    const dbAffiliate = await prisma.affiliate.findFirst({
+      where: { email: username, active: true },
+    });
+    if (!dbAffiliate) {
+      // Also try matching by code
+      const byCode = await prisma.affiliate.findFirst({
+        where: { code: username.toUpperCase(), active: true },
+      });
+      if (byCode?.password && byCode.password === password) {
+        const token = issueSessionToken({ username: byCode.name, role: 'affiliate', affiliateCode: byCode.code });
+        res.json({ ok: true, token, username: byCode.name, role: 'affiliate', tier: 1, affiliateCode: byCode.code });
+        return;
+      }
+    }
+    if (dbAffiliate?.password && dbAffiliate.password === password) {
+      const token = issueSessionToken({ username: dbAffiliate.name, role: 'affiliate', affiliateCode: dbAffiliate.code });
+      res.json({ ok: true, token, username: dbAffiliate.name, role: 'affiliate', tier: 1, affiliateCode: dbAffiliate.code });
+      return;
+    }
+  } catch { /* fall through to file-based auth */ }
+
+  // Check affiliate users in affiliates.json (legacy)
   const affiliateUser = affiliates.find(
     (a) => a.username === username && a.password === password,
   );
@@ -170,6 +195,21 @@ router.get('/api/me', requireAuth, (req: Request, res: Response) => {
     affiliateCode: actor.affiliateCode || null,
     tier: aff?.tier || (actor.role === 'admin' ? null : 1),
   });
+});
+
+// GET /api/my/connected-platforms — stub for affiliate.html
+router.get('/api/my/connected-platforms', requireAuth, (_req: Request, res: Response) => {
+  res.json({ platforms: {} });
+});
+
+// GET /api/welcome — stub for affiliate.html
+router.get('/api/welcome', requireAuth, (_req: Request, res: Response) => {
+  res.json({ ok: true });
+});
+
+// GET /api/terms — stub for affiliate.html
+router.get('/api/terms', (_req: Request, res: Response) => {
+  res.json({ ok: true });
 });
 
 export default router;

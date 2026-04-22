@@ -39,6 +39,7 @@ const jwt = __importStar(require("jsonwebtoken"));
 const env_1 = require("../../config/env");
 const auth_1 = require("../../middleware/auth");
 const auth_2 = require("../../middleware/auth");
+const prisma_1 = require("../../lib/prisma");
 const router = (0, express_1.Router)();
 function readAffiliates() {
     try {
@@ -75,7 +76,7 @@ function issueSessionToken(payload) {
     }, env_1.env.V2_JWT_SECRET, { expiresIn: '30d' });
 }
 // POST /api/login
-router.post('/api/login', (req, res) => {
+router.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
         res.status(400).json({ error: 'username and password required' });
@@ -85,7 +86,31 @@ router.post('/api/login', (req, res) => {
     console.log('[login] attempt', { username, hasAdminUsers: !!env_1.env.ADMIN_USERS, hasConsolePassword: !!env_1.env.CONSOLE_PASSWORD });
     const affiliates = readAffiliates();
     const creds = readCreds();
-    // Check affiliate users
+    // Check affiliate users in database first
+    try {
+        const prisma = (0, prisma_1.getPrisma)();
+        const dbAffiliate = await prisma.affiliate.findFirst({
+            where: { email: username, active: true },
+        });
+        if (!dbAffiliate) {
+            // Also try matching by code
+            const byCode = await prisma.affiliate.findFirst({
+                where: { code: username.toUpperCase(), active: true },
+            });
+            if (byCode?.password && byCode.password === password) {
+                const token = issueSessionToken({ username: byCode.name, role: 'affiliate', affiliateCode: byCode.code });
+                res.json({ ok: true, token, username: byCode.name, role: 'affiliate', tier: 1, affiliateCode: byCode.code });
+                return;
+            }
+        }
+        if (dbAffiliate?.password && dbAffiliate.password === password) {
+            const token = issueSessionToken({ username: dbAffiliate.name, role: 'affiliate', affiliateCode: dbAffiliate.code });
+            res.json({ ok: true, token, username: dbAffiliate.name, role: 'affiliate', tier: 1, affiliateCode: dbAffiliate.code });
+            return;
+        }
+    }
+    catch { /* fall through to file-based auth */ }
+    // Check affiliate users in affiliates.json (legacy)
     const affiliateUser = affiliates.find((a) => a.username === username && a.password === password);
     if (affiliateUser) {
         const affiliateCode = affiliateUser.affiliateCode || affiliateUser.code || username.toUpperCase();
@@ -169,6 +194,18 @@ router.get('/api/me', auth_1.requireAuth, (req, res) => {
         affiliateCode: actor.affiliateCode || null,
         tier: aff?.tier || (actor.role === 'admin' ? null : 1),
     });
+});
+// GET /api/my/connected-platforms — stub for affiliate.html
+router.get('/api/my/connected-platforms', auth_1.requireAuth, (_req, res) => {
+    res.json({ platforms: {} });
+});
+// GET /api/welcome — stub for affiliate.html
+router.get('/api/welcome', auth_1.requireAuth, (_req, res) => {
+    res.json({ ok: true });
+});
+// GET /api/terms — stub for affiliate.html
+router.get('/api/terms', (_req, res) => {
+    res.json({ ok: true });
 });
 exports.default = router;
 //# sourceMappingURL=authRoutes.js.map

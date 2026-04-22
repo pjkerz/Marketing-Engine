@@ -204,6 +204,7 @@ model Affiliate {
   code       String   @unique
   name       String
   email      String   @unique
+  password   String?
   active     Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

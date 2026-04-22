@@ -140,6 +140,17 @@ router.post('/api/login', (req: Request, res: Response) => {
   res.status(401).json({ error: 'Invalid username or password' });
 });
 
+// POST /api/admin/verify-pin — PIN gate for admin.html
+router.post('/api/admin/verify-pin', requireAuth, (req: Request, res: Response) => {
+  const { pin } = req.body as { pin?: string };
+  const correctPin = (process.env.ADMIN_PIN || '0404').toString().trim();
+  if (pin && pin.toString().trim() === correctPin) {
+    res.json({ ok: true });
+  } else {
+    res.status(401).json({ error: 'Incorrect PIN' });
+  }
+});
+
 // POST /api/logout
 router.post('/api/logout', (_req: Request, res: Response) => {
   res.clearCookie('session');

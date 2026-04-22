@@ -378,7 +378,9 @@ async function init() {
     localStorage.setItem('has_logged_in_' + affiliateCode, '1');
     switchTab('welcome');
   } else {
-    const lastTab = localStorage.getItem('last_tab_' + affiliateCode) || 'calendar';
+    const validTabIds = DEFAULT_TABS.map(t => t.id);
+    const savedTab = localStorage.getItem('last_tab_' + affiliateCode);
+    const lastTab = (savedTab && validTabIds.includes(savedTab)) ? savedTab : 'calendar';
     switchTab(lastTab);
   }
 }
@@ -848,7 +850,7 @@ function renderChannels(plan, weekStart) {
 
   if (!platforms.length) {
     document.getElementById('main-content').innerHTML = `<div class="empty-state">No content in plan yet.<br><br>
-      <button class="btn btn-primary" onclick="switchTab('plan')">📅 Go to Calendar</button></div>`;
+      <button class="btn btn-primary" onclick="switchTab('calendar')">📅 Go to Calendar</button></div>`;
     return;
   }
 
@@ -860,7 +862,7 @@ function renderChannels(plan, weekStart) {
         <div class="week-label">Week of ${weekLabel}</div>
         <button class="btn btn-ghost btn-sm" onclick="navChannelWeek(1)">Next →</button>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="switchTab('plan')">📅 Calendar view</button>
+      <button class="btn btn-ghost btn-sm" onclick="switchTab('calendar')">📅 Calendar view</button>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px" id="ch-nav">
       ${platforms.map((p, i) => `<button class="plat-chip ${i===0?'on':''}" id="pchip-${p}" onclick="selectChannel('${p}')">${PLATFORM_ICONS[p]??'•'} ${(PLATFORM_LABELS[p]??p).toUpperCase()}</button>`).join('')}
@@ -1205,7 +1207,7 @@ function openRunMedia(runId) {
 }
 
 function generateNew() {
-  switchTab('plan');
+  switchTab('calendar');
 }
 
 // ── STATS ─────────────────────────────────────────────────────────────────────

@@ -90,6 +90,9 @@ const EnvSchema = z.object({
 
   // Token encryption key (32-byte hex — can share V2_ENCRYPTION_KEY or use separate)
   OAUTH_TOKEN_SECRET: z.string().optional(),
+
+  // Apollo.io — lead sourcing
+  APOLLO_API_KEY: z.string().optional(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

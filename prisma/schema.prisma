@@ -25,6 +25,8 @@ model Business {
   funnelEvents     FunnelEvent[]
   seoAudits        SeoAudit[]
   llmAudits        LlmPresenceAudit[]
+  leads            Lead[]
+  leadPullJobs     LeadPullJob[]
 
   @@map("businesses")
 }
@@ -54,6 +56,7 @@ model BusinessConfig {
   cmsWebhookUrl   String?  // SEO content publish webhook
   autoApply       Boolean  @default(false) // AI optimisation auto-apply
   gscTokens       Json?    // Google Search Console OAuth tokens
+  teamUsers       Json     @default("[]") // [{username, password, email?}]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -811,4 +814,47 @@ model IntelligenceFeedEvent {
 
   @@index([businessId, read, createdAt])
   @@map("intelligence_feed_events")
+}
+
+model Lead {
+  id          String   @id @default(uuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  source      String   @default("apollo")
+  apolloId    String?  @unique
+  firstName   String?
+  lastName    String?
+  email       String?
+  phone       String?
+  title       String?
+  company     String?
+  location    String?
+  linkedinUrl String?
+  openToWork  Boolean  @default(false)
+  status      String   @default("new") // new | contacted | replied | converted | unsubscribed
+
+  createdAt   DateTime @default(now())
+
+  @@index([businessId])
+  @@index([status])
+  @@index([openToWork])
+  @@map("leads")
+}
+
+model LeadPullJob {
+  id          String   @id @default(uuid())
+  businessId  String
+  business    Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  status      String   @default("pending") // pending | running | done | failed
+  titles      String[]
+  targetCount Int      @default(1000)
+  fetched     Int      @default(0)
+  saved       Int      @default(0)
+  page        Int      @default(1)
+  error       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([businessId])
+  @@map("lead_pull_jobs")
 }

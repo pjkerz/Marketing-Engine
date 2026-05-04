@@ -162,6 +162,19 @@ router.post('/api/login', async (req: Request, res: Response) => {
     return;
   }
 
+  // Check team users stored in BusinessConfig.teamUsers
+  try {
+    const prisma = getPrisma();
+    const config = await prisma.businessConfig.findUnique({ where: { businessId: ALPHABOOST_BUSINESS_ID } });
+    const teamUsers = (config?.teamUsers as Array<{ username: string; password: string }> | null) ?? [];
+    const teamMatch = teamUsers.find(u => u.username === username && u.password === password);
+    if (teamMatch) {
+      const token = issueSessionToken({ username, role: 'admin' });
+      res.json({ ok: true, token, username, role: 'leadership' });
+      return;
+    }
+  } catch { /* fall through */ }
+
   res.status(401).json({ error: 'Invalid username or password' });
 });
 

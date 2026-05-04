@@ -1,0 +1,1 @@
+ALTER TABLE "business_configs" ADD COLUMN IF NOT EXISTS "teamUsers" JSONB NOT NULL DEFAULT '[]';

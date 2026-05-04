@@ -33,7 +33,9 @@ import intelligenceRoutes from './modules/intelligence/intelligenceRoutes';
 import compatRoutes from './modules/compat/compatRoutes';
 import gscRoutes from './modules/gsc/gscRoutes';
 import oauthRoutes from './modules/oauth/oauthRoutes';
+import leadsRoutes from './modules/leads/leadsRoutes';
 import { startDashboardWorker, stopDashboardWorker } from './queues/workers/dashboardWorker';
+import { startLeadPullWorker, stopLeadPullWorker } from './queues/workers/leadPullWorker';
 import { closeRedis } from './lib/redis';
 import { closePrisma } from './lib/prisma';
 import { closeQueues } from './queues';
@@ -88,6 +90,7 @@ app.use('/v2/api/admin/keywords', keywordRoutes);
 app.use('/v2/api/admin/llm-presence', llmPresenceRoutes);
 app.use('/v2/api/admin/dashboard', dashboardRoutes);
 app.use('/v2/api/admin/intelligence', intelligenceRoutes);
+app.use('/v2/api/admin/leads', leadsRoutes);
 
 // Legacy /api/* compat bridge (admin.html v1 paths → v2 implementations)
 app.use('/', compatRoutes);
@@ -138,6 +141,7 @@ function startWorkers(): void {
   startSeoAuditWorker();
   startLlmPresenceWorker();
   startDashboardWorker();
+  startLeadPullWorker();
   logger.info({ module: 'index' }, 'All workers started');
 }
 
@@ -158,6 +162,7 @@ async function shutdown(signal: string): Promise<void> {
     stopSeoAuditWorker(),
     stopLlmPresenceWorker(),
     stopDashboardWorker(),
+    stopLeadPullWorker(),
   ]);
   await closeQueues();
   await closeRedis();

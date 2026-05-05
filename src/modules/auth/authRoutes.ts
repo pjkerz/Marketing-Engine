@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as jwt from 'jsonwebtoken';
 import { env } from '../../config/env';
 import { requireAuth } from '../../middleware/auth';
-import { ALPHABOOST_BUSINESS_ID } from '../../middleware/auth';
+import { ALPHABOOST_BUSINESS_ID } from '../../middleware/auth'; // compat only
 import { getPrisma } from '../../lib/prisma';
 
 const router = Router();
@@ -45,7 +45,7 @@ function issueSessionToken(payload: {
   username: string;
   role: string;
   affiliateCode?: string;
-  businessId?: string;
+  businessId: string;
   tier?: number;
 }): string {
   return jwt.sign(
@@ -53,7 +53,7 @@ function issueSessionToken(payload: {
       username: payload.username,
       role: payload.role,
       affiliateCode: payload.affiliateCode,
-      businessId: payload.businessId || ALPHABOOST_BUSINESS_ID,
+      businessId: payload.businessId,
       tier: payload.tier || 1,
     },
     env.V2_JWT_SECRET,
@@ -63,7 +63,7 @@ function issueSessionToken(payload: {
 
 // POST /api/login
 router.post('/api/login', async (req: Request, res: Response) => {
-  const { username, password } = req.body as { username?: string; password?: string };
+  const { username, password, businessSlug } = req.body as { username?: string; password?: string; businessSlug?: string };
   if (!username || !password) {
     res.status(400).json({ error: 'username and password required' });
     return;
@@ -75,25 +75,38 @@ router.post('/api/login', async (req: Request, res: Response) => {
   const affiliates = readAffiliates();
   const creds = readCreds();
 
+  const prisma = getPrisma();
+
+  // Resolve businessId from slug if provided (needed for team user lookups)
+  let resolvedBusinessId: string | null = null;
+  if (businessSlug) {
+    try {
+      const biz = await prisma.business.findFirst({ where: { slug: businessSlug, active: true }, select: { id: true } });
+      resolvedBusinessId = biz?.id ?? null;
+      if (!resolvedBusinessId) {
+        res.status(400).json({ error: `Unknown business: ${businessSlug}` });
+        return;
+      }
+    } catch { /* fall through */ }
+  }
+
   // Check affiliate users in database first
   try {
-    const prisma = getPrisma();
     const dbAffiliate = await prisma.affiliate.findFirst({
       where: { email: username, active: true },
     });
     if (!dbAffiliate) {
-      // Also try matching by code
       const byCode = await prisma.affiliate.findFirst({
         where: { code: username.toUpperCase(), active: true },
       });
       if (byCode?.password && byCode.password === password) {
-        const token = issueSessionToken({ username: byCode.name, role: 'affiliate', affiliateCode: byCode.code });
+        const token = issueSessionToken({ username: byCode.name, role: 'affiliate', affiliateCode: byCode.code, businessId: byCode.businessId });
         res.json({ ok: true, token, username: byCode.name, role: 'affiliate', tier: 1, affiliateCode: byCode.code });
         return;
       }
     }
     if (dbAffiliate?.password && dbAffiliate.password === password) {
-      const token = issueSessionToken({ username: dbAffiliate.name, role: 'affiliate', affiliateCode: dbAffiliate.code });
+      const token = issueSessionToken({ username: dbAffiliate.name, role: 'affiliate', affiliateCode: dbAffiliate.code, businessId: dbAffiliate.businessId });
       res.json({ ok: true, token, username: dbAffiliate.name, role: 'affiliate', tier: 1, affiliateCode: dbAffiliate.code });
       return;
     }
@@ -109,18 +122,15 @@ router.post('/api/login', async (req: Request, res: Response) => {
       username: affiliateUser.name || username,
       role: 'affiliate',
       affiliateCode,
+      businessId: resolvedBusinessId ?? ALPHABOOST_BUSINESS_ID,
       tier: affiliateUser.tier || 1,
     });
-    res.json({
-      ok: true,
-      token,
-      username: affiliateUser.name || username,
-      role: 'affiliate',
-      tier: affiliateUser.tier || 1,
-      affiliateCode,
-    });
+    res.json({ ok: true, token, username: affiliateUser.name || username, role: 'affiliate', tier: affiliateUser.tier || 1, affiliateCode });
     return;
   }
+
+  // Admin credential checks — all require a businessSlug to scope the session
+  const adminBusinessId = resolvedBusinessId ?? ALPHABOOST_BUSINESS_ID;
 
   // Check ADMIN_USERS env var first (format: "user1:pass1,user2:pass2")
   if (env.ADMIN_USERS) {
@@ -130,7 +140,7 @@ router.post('/api/login', async (req: Request, res: Response) => {
     });
     const adminMatch = adminUsers.find((u) => u.username === username && u.password === password);
     if (adminMatch) {
-      const token = issueSessionToken({ username, role: 'admin' });
+      const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
       res.json({ ok: true, token, username, role: 'leadership' });
       return;
     }
@@ -138,7 +148,7 @@ router.post('/api/login', async (req: Request, res: Response) => {
 
   // Check CONSOLE_PASSWORD env var
   if (env.CONSOLE_PASSWORD && password === env.CONSOLE_PASSWORD) {
-    const token = issueSessionToken({ username, role: 'admin' });
+    const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
     res.json({ ok: true, token, username, role: 'leadership' });
     return;
   }
@@ -150,26 +160,25 @@ router.post('/api/login', async (req: Request, res: Response) => {
 
   const teamMatch = teamUsers.find((u) => u.username === username && u.password === password);
   if (teamMatch) {
-    const token = issueSessionToken({ username, role: 'admin' });
+    const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
     res.json({ ok: true, token, username, role: 'leadership' });
     return;
   }
 
   // Check CONSOLE_PASSWORD from CREDS.md (local dev fallback)
   if (creds.CONSOLE_PASSWORD && password === creds.CONSOLE_PASSWORD) {
-    const token = issueSessionToken({ username, role: 'admin' });
+    const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
     res.json({ ok: true, token, username, role: 'leadership' });
     return;
   }
 
-  // Check team users stored in BusinessConfig.teamUsers
+  // Check team users stored in BusinessConfig.teamUsers (per-tenant)
   try {
-    const prisma = getPrisma();
-    const config = await prisma.businessConfig.findUnique({ where: { businessId: ALPHABOOST_BUSINESS_ID } });
-    const teamUsers = (config?.teamUsers as Array<{ username: string; password: string }> | null) ?? [];
-    const teamMatch = teamUsers.find(u => u.username === username && u.password === password);
-    if (teamMatch) {
-      const token = issueSessionToken({ username, role: 'admin' });
+    const config = await prisma.businessConfig.findUnique({ where: { businessId: adminBusinessId } });
+    const dbTeamUsers = (config?.teamUsers as Array<{ username: string; password: string }> | null) ?? [];
+    const dbTeamMatch = dbTeamUsers.find(u => u.username === username && u.password === password);
+    if (dbTeamMatch) {
+      const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
       res.json({ ok: true, token, username, role: 'leadership' });
       return;
     }

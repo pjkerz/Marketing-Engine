@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getPrisma } from '../../lib/prisma';
 import { logger } from '../../lib/logger';
-import { ALPHABOOST_BUSINESS_ID } from '../../middleware/auth';
 
 const GROQ_API_KEY = process.env['GROQ_API_KEY'] ?? '';
 const BOK_BASE = path.join(process.env['HOME'] ?? '/Users/macmini', '.openclaw/businesses');
@@ -65,7 +64,7 @@ export async function generateSeoContent(
 
   // Get BOK context (use alphaboost slug for first tenant)
   const business = await prisma.business.findUnique({ where: { id: businessId }, select: { slug: true } });
-  const bokContext = readBokChunks(business?.slug ?? 'alphaboost', keyword);
+  const bokContext = readBokChunks(business?.slug ?? '', keyword);
 
   const systemPrompt = `You are an SEO content writer for ${brandName}.
 Brand voice: ${brandVoice}.

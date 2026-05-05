@@ -307,7 +307,7 @@ router.post(
       // Get BOK context — pull relevant podcast knowledge for this brief/channel
       const business = await prisma.business.findUnique({ where: { id: affiliate.businessId }, select: { slug: true } });
       const bokTopic = brief || channels.join(' ') + ' career growth AI professional';
-      const bokContext = readBokChunks(business?.slug ?? 'alphaboost', bokTopic);
+      const bokContext = readBokChunks(business?.slug ?? '', bokTopic);
 
       // Get business config for brand voice
       const config = await prisma.businessConfig.findUnique({ where: { businessId: affiliate.businessId } });
@@ -346,8 +346,9 @@ router.post(
           requestId: req.requestId,
         });
 
+        const tenantLandingUrl = config?.landingPageUrl ?? env.APP_URL;
         const personalized = profile
-          ? personalize({ baseContent, channel, affiliateCode: req.params["code"] as string, profile })
+          ? personalize({ baseContent, channel, affiliateCode: req.params["code"] as string, profile, tenantLandingUrl })
           : baseContent;
 
         const run = await prisma.contentGenerationRun.create({
@@ -953,6 +954,11 @@ router.post(
       const themeHint = instance?.contentThemes?.join(', ') ?? '';
 
       // Generate content via LLM synchronously so affiliate gets result immediately
+      const slotBizConfig = await prisma.businessConfig.findUnique({ where: { businessId: affiliate.businessId } });
+      const slotBrandName = slotBizConfig?.brandName ?? 'AlphaNoetics';
+      const slotBrandVoice = slotBizConfig?.brandVoice ?? 'authentic, direct, and insight-driven';
+      const slotLandingUrl = slotBizConfig?.landingPageUrl ?? env.APP_URL;
+
       const { llmClient } = await import('../../integrations/llm/llmClient');
       const optimisationHints = await applyOptimisationToGeneration(affiliate.businessId, { channel: slot.platform });
       const formatHint = optimisationHints.preferredFormat ? ` Use ${optimisationHints.preferredFormat} format.` : '';
@@ -960,7 +966,7 @@ router.post(
 
       const baseContent = await llmClient.complete({
         model: env.GROQ_MODEL_CONTENT,
-        systemPrompt: `You are a professional content writer for AlphaBoost, an AI career acceleration platform. Write a ${slot.platform} post that helps career-focused professionals.${formatHint}${themeInstruction}`,
+        systemPrompt: `You are a professional content writer for ${slotBrandName}. Brand voice: ${slotBrandVoice}. Write a ${slot.platform} post that helps career-focused professionals.${formatHint}${themeInstruction}`,
         userPrompt: `Write a compelling ${slot.platform} post about AI career acceleration and professional growth.`,
         maxTokens: 512,
         responseFormat: 'text',
@@ -972,6 +978,7 @@ router.post(
         channel: slot.platform,
         affiliateCode: affiliate.code,
         profile,
+        tenantLandingUrl: slotLandingUrl,
       });
 
       const run = await prisma.contentGenerationRun.create({

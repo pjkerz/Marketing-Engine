@@ -7,6 +7,7 @@ import { adminLimit } from '../../middleware/rateLimit';
 import { hardDeleteAffiliate } from '../profile/profileRoutes';
 import { logger } from '../../lib/logger';
 import { fireMakeWebhook } from '../../lib/makeWebhook';
+import { env } from '../../config/env';
 
 const router = Router();
 
@@ -99,8 +100,10 @@ router.get(
     try {
       const prisma = getPrisma();
       const affiliate = await findAffiliateScoped(prisma, req.params["code"] as string, req.actor!.businessId);
+      const config = await prisma.businessConfig.findUnique({ where: { businessId: req.actor!.businessId }, select: { landingPageUrl: true } });
+      const appUrl = config?.landingPageUrl ?? env.APP_URL;
       const token = issueOnboardingToken(affiliate.code, affiliate.businessId);
-      const link = `https://alphaboost.ngrok.app/v2/connect?token=${token}`;
+      const link = `${appUrl}/v2/connect?token=${token}`;
       res.json({ code: affiliate.code, name: affiliate.name, link });
     } catch (err) {
       next(err);
@@ -365,6 +368,8 @@ router.post(
         },
       });
 
+      const bizConfig = await prisma.businessConfig.findUnique({ where: { businessId: req.actor!.businessId }, select: { landingPageUrl: true } });
+      const appUrl = bizConfig?.landingPageUrl ?? env.APP_URL;
       // Fire Make webhook (non-blocking — failure never breaks approval)
       await fireMakeWebhook({
         event: 'content_approved',
@@ -373,7 +378,7 @@ router.post(
         affiliateName: affiliate.name,
         channel: run.channel,
         content: run.outputContent ?? '',
-        refLink: `https://alphaboost.ngrok.app/ref/${affiliate.code}`,
+        refLink: `${appUrl}/ref/${affiliate.code}`,
         approvedAt: new Date().toISOString(),
       });
 

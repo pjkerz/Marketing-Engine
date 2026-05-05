@@ -118,10 +118,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         result = await enrichContact(args as Parameters<typeof enrichContact>[0]);
         break;
       case 'apollo_save_leads':
-        result = await saveLeads(args as Parameters<typeof saveLeads>[0]);
+        result = await saveLeads(args as unknown as Parameters<typeof saveLeads>[0]);
         break;
       case 'apollo_lead_status':
-        result = await getLeadStatus(args as Parameters<typeof getLeadStatus>[0]);
+        result = await getLeadStatus(args as unknown as Parameters<typeof getLeadStatus>[0]);
         break;
       default:
         return {

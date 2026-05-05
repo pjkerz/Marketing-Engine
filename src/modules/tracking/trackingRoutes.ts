@@ -2,8 +2,8 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { getPrisma } from '../../lib/prisma';
 import { logger } from '../../lib/logger';
 import { v4 as uuidv4 } from 'uuid';
-import { ALPHABOOST_BUSINESS_ID } from '../../middleware/auth';
 import { trackingLimit } from '../../middleware/rateLimit';
+import { env } from '../../config/env';
 
 const router = Router();
 
@@ -105,7 +105,7 @@ router.get('/ref/:code', async (req: Request, res: Response) => {
 
       const businessId = affiliate.businessId;
       const config = await prisma.businessConfig.findUnique({ where: { businessId } });
-      const landingUrl = config?.landingPageUrl || 'https://alphaboost.app';
+      const landingUrl = config?.landingPageUrl || env.APP_URL;
 
       await prisma.funnelEvent.create({
         data: {
@@ -141,7 +141,7 @@ router.get('/ref/:code', async (req: Request, res: Response) => {
 
   // Immediate redirect
   const prisma = getPrisma();
-  let landingUrl = 'https://alphaboost.app';
+  let landingUrl = env.APP_URL;
   try {
     const affiliate = await prisma.affiliate.findUnique({ where: { code } });
     if (affiliate) {
@@ -162,14 +162,14 @@ router.post('/event', async (req: Request, res: Response) => {
   setImmediate(async () => {
     try {
       const {
-        businessId = ALPHABOOST_BUSINESS_ID,
+        businessId,
         sessionId, visitorId, affiliateCode,
         eventType, channel = 'direct', funnelStage = 'awareness',
         url, pageTitle, referrerUrl, contentFormat, variantId,
         conversionType, conversionValue, utmSource, utmMedium, utmCampaign, utmContent,
       } = req.body as Record<string, string | number | undefined>;
 
-      if (!sessionId || !eventType) return;
+      if (!sessionId || !eventType || !businessId) return;
 
       const prisma = getPrisma();
       const ua = req.headers['user-agent'] || '';
@@ -225,7 +225,8 @@ router.get('/pixel.gif', async (req: Request, res: Response) => {
 
   setImmediate(async () => {
     try {
-      const { cid, sid, bid = ALPHABOOST_BUSINESS_ID } = req.query as Record<string, string>;
+      const { cid, sid, bid } = req.query as Record<string, string>;
+      if (!bid || !sid) return;
       if (!sid) return;
       const prisma = getPrisma();
       await prisma.funnelEvent.create({
@@ -253,7 +254,7 @@ router.get('/pixel.gif', async (req: Request, res: Response) => {
 // GET /track/click/:trackingId — email click redirect
 router.get('/click/:trackingId', async (req: Request, res: Response) => {
   const rawUrl = req.query['url'] as string;
-  const { sid, bid = ALPHABOOST_BUSINESS_ID, cid } = req.query as Record<string, string>;
+  const { sid, bid, cid } = req.query as Record<string, string>;
 
   // Redirect immediately
   let dest = '/';
@@ -303,12 +304,14 @@ router.post('/conversion', async (req: Request, res: Response, next: NextFunctio
   setImmediate(async () => {
     try {
       const {
-        businessId = ALPHABOOST_BUSINESS_ID,
+        businessId,
         sessionId, visitorId, affiliateCode,
         conversionType = 'unknown', conversionValue = 0,
         contentRunId, campaignId, referrerUrl,
         utmSource, utmMedium, utmCampaign,
       } = req.body as Record<string, string | number | undefined>;
+
+      if (!businessId || !sessionId) return;
 
       const prisma = getPrisma();
 
@@ -355,17 +358,20 @@ router.post('/conversion', async (req: Request, res: Response, next: NextFunctio
   });
 });
 
-// GET /track/tracker.js — serve tracking script
-router.get('/tracker.js', (_req: Request, res: Response) => {
+// GET /track/tracker.js?bid=<businessId> — serve per-tenant tracking script
+router.get('/tracker.js', (req: Request, res: Response) => {
+  const bid = (req.query['bid'] as string) || '';
+  const endpoint = `${env.APP_URL}/track/event`;
   res.set('Content-Type', 'application/javascript');
   res.set('Cache-Control', 'public, max-age=3600');
-  res.send(TRACKER_SCRIPT);
+  res.send(buildTrackerScript(bid, endpoint));
 });
 
-const TRACKER_SCRIPT = `
+function buildTrackerScript(bid: string, endpoint: string): string {
+  return `
 (function(){
-  var ENDPOINT='https://alphaboost.ngrok.app/track/event';
-  var BID='00000000-0000-0000-0000-000000000001';
+  var ENDPOINT='${endpoint}';
+  var BID='${bid}';
   var sid,vid,ref;
 
   function getCookie(n){var m=document.cookie.match('(^|;)\\\\s*'+n+'\\\\s*=\\\\s*([^;]+)');return m?m.pop():null}
@@ -419,5 +425,6 @@ const TRACKER_SCRIPT = `
   try{init();if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',onLoad);}else{onLoad();}}catch(e){}
 })();
 `.trim();
+}
 
 export default router;

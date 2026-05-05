@@ -34,7 +34,7 @@ export async function getPendingContent(input: { businessSlug: string }) {
   return {
     pendingApproval: rows.rows,
     total: rows.rowCount,
-    note: rows.rowCount > 0
+    note: (rows.rowCount ?? 0) > 0
       ? `${rows.rowCount} pieces awaiting approval. Review and approve in the Content Studio.`
       : 'No content pending approval.',
   };

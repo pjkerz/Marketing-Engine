@@ -67,10 +67,12 @@ const EnvSchema = z.object({
   TRACKING_PIXEL_SECRET: z.string().optional(),
   SESSION_STITCH_SECRET: z.string().optional(),
 
+  // Public app URL (used for OAuth callbacks and email links)
+  APP_URL: z.string().url().default('https://alphanoetic.me'),
+
   // Google OAuth (Search Console + YouTube)
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
-  GSC_SITE_URL: z.string().default('https://alphanoetic.me/'),
 
   // LinkedIn OAuth
   LI_CLIENT_ID: z.string().optional(),

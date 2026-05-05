@@ -3,6 +3,7 @@ import { getBullRedis } from '../../lib/redis';
 import { logger } from '../../lib/logger';
 import { getPrisma } from '../../lib/prisma';
 import { fireMakeWebhook } from '../../lib/makeWebhook';
+import { env } from '../../config/env';
 
 interface DispatchJobData {
   runId: string;
@@ -28,8 +29,10 @@ export function startDispatchWorker(): Worker {
         data: { status: 'dispatched', updatedAt: new Date() },
       });
 
-      // Fetch affiliate name for the webhook payload
+      // Fetch affiliate and their tenant config for the webhook payload
       const affiliate = await prisma.affiliate.findUnique({ where: { id: affiliateId } });
+      const bizConfig = affiliate ? await prisma.businessConfig.findUnique({ where: { businessId: affiliate.businessId }, select: { landingPageUrl: true } }) : null;
+      const appUrl = bizConfig?.landingPageUrl ?? env.APP_URL;
 
       // Fire Make webhook so content lands in Sendible as a draft
       await fireMakeWebhook({
@@ -39,7 +42,7 @@ export function startDispatchWorker(): Worker {
         affiliateName: affiliate?.name ?? affiliateId,
         channel,
         content: run.outputContent ?? '',
-        refLink: `https://alphaboost.ngrok.app/ref/${affiliate?.code ?? affiliateId}`,
+        refLink: `${appUrl}/ref/${affiliate?.code ?? affiliateId}`,
         approvedAt: new Date().toISOString(),
       });
 

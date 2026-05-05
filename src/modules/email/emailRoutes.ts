@@ -15,21 +15,20 @@ import { sendEmail } from './resendClient';
 
 const router = Router();
 
-const BASE_URL = 'https://alphaboost.ngrok.app';
 const UNSUB_SECRET = env.SESSION_STITCH_SECRET ?? 'unsub-secret-change-me';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function injectTrackingPixel(html: string, campaignId: string, subscriberId: string, businessId: string): string {
-  const pixelUrl = `${BASE_URL}/track/pixel.gif?cid=${campaignId}&sid=${subscriberId}&bid=${businessId}`;
+function injectTrackingPixel(html: string, campaignId: string, subscriberId: string, businessId: string, appUrl: string): string {
+  const pixelUrl = `${appUrl}/track/pixel.gif?cid=${campaignId}&sid=${subscriberId}&bid=${businessId}`;
   const pixel = `<img src="${pixelUrl}" width="1" height="1" style="display:none" alt="">`;
   if (html.includes('</body>')) return html.replace('</body>', `${pixel}</body>`);
   return html + pixel;
 }
 
-function injectUnsubscribeLink(html: string, subscriberId: string): string {
+function injectUnsubscribeLink(html: string, subscriberId: string, appUrl: string): string {
   const token = generateUnsubToken(subscriberId, UNSUB_SECRET);
-  const unsubUrl = `${BASE_URL}/v2/api/email/unsubscribe?sid=${subscriberId}&token=${token}`;
+  const unsubUrl = `${appUrl}/v2/api/email/unsubscribe?sid=${subscriberId}&token=${token}`;
   const link = `<p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:32px">
     <a href="${unsubUrl}" style="color:#94a3b8">Unsubscribe</a>
   </p>`;
@@ -37,12 +36,11 @@ function injectUnsubscribeLink(html: string, subscriberId: string): string {
   return html + link;
 }
 
-function wrapLinksForTracking(html: string, campaignId: string): string {
-  // Wrap all href links with click tracking
+function wrapLinksForTracking(html: string, campaignId: string, appUrl: string): string {
   return html.replace(/href="(https?:\/\/[^"]+)"/g, (match, url) => {
     if (url.includes('/track/') || url.includes('unsubscribe')) return match;
     const encoded = encodeURIComponent(url);
-    return `href="${BASE_URL}/track/click/${campaignId}?url=${encoded}"`;
+    return `href="${appUrl}/track/click/${campaignId}?url=${encoded}"`;
   });
 }
 
@@ -218,9 +216,12 @@ router.post('/capture', trackingLimit, async (req: Request, res: Response, next:
             // Send immediately
             const sub = await prisma.emailSubscriber.findUnique({ where: { listId_email: { listId, email } } });
             if (sub) {
-              const finalHtml = injectUnsubscribeLink(firstStep.html, sub.id);
+              const bConfig = await prisma.businessConfig.findUnique({ where: { businessId }, select: { landingPageUrl: true, fromName: true, fromEmail: true } });
+              const subAppUrl = bConfig?.landingPageUrl ?? env.APP_URL;
+              const subFrom = bConfig?.fromEmail && bConfig?.fromName ? `${bConfig.fromName} <${bConfig.fromEmail}>` : env.EMAIL_FROM;
+              const finalHtml = injectUnsubscribeLink(firstStep.html, sub.id, subAppUrl);
               await sendEmail({
-                from: env.EMAIL_FROM,
+                from: subFrom,
                 to: [email],
                 subject: firstStep.subject,
                 html: finalHtml,
@@ -338,6 +339,12 @@ router.post('/campaigns/:id/send', requireAuth, requireRole('admin'), adminLimit
     if (!campaign) throw new AppError('NOT_FOUND', 'Campaign not found.', 404);
     if (campaign.status === 'sent') throw new AppError('FORBIDDEN', 'Campaign already sent.', 409);
 
+    const bizConfig = await prisma.businessConfig.findUnique({ where: { businessId }, select: { landingPageUrl: true, fromName: true, fromEmail: true } });
+    const appUrl = bizConfig?.landingPageUrl ?? env.APP_URL;
+    const fromAddress = bizConfig?.fromEmail && bizConfig?.fromName
+      ? `${bizConfig.fromName} <${bizConfig.fromEmail}>`
+      : env.EMAIL_FROM;
+
     // Layer 1: Spam check
     const spamResult = scoreContent(campaign.html, campaign.subject);
     if (!spamResult.safe && !override) {
@@ -389,12 +396,12 @@ router.post('/campaigns/:id/send', requireAuth, requireRole('admin'), adminLimit
           try {
             // Personalise HTML
             let html = campaign.html;
-            html = injectTrackingPixel(html, campaign.id, sub.id, businessId);
-            html = injectUnsubscribeLink(html, sub.id);
-            html = wrapLinksForTracking(html, campaign.id);
+            html = injectTrackingPixel(html, campaign.id, sub.id, businessId, appUrl);
+            html = injectUnsubscribeLink(html, sub.id, appUrl);
+            html = wrapLinksForTracking(html, campaign.id, appUrl);
 
             const result = await sendEmail({
-              from: env.EMAIL_FROM,
+              from: fromAddress,
               to: [sub.email],
               subject: campaign.subject,
               html,

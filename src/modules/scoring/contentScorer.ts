@@ -23,7 +23,7 @@ export async function scoreContent(params: { content: string; channel: string })
   const audienceRelevance = lower.includes('career') || lower.includes('professional') || lower.includes('job') ? 16 : 10;
   const structure = sentences.length >= 3 ? 18 : sentences.length === 2 ? 12 : 6;
   const authorityGrounding = lower.includes("i've seen") || lower.includes('from what i') || lower.includes('in my experience') ? 16 : 8;
-  const ctaCoherence = lower.includes('alphaboost') || lower.includes('sign up') || lower.includes('check it out') ? 16 : 8;
+  const ctaCoherence = lower.includes('sign up') || lower.includes('check it out') || lower.includes('join') || lower.includes('start now') ? 16 : 8;
 
   const quality: ScoreBreakdown = {
     total: hookClarity + audienceRelevance + structure + authorityGrounding + ctaCoherence,
@@ -47,7 +47,7 @@ export async function scoreContent(params: { content: string; channel: string })
   const curiosityGeneration = sentences[0]?.includes('?') || lower.includes('what if') ? 16 : 8;
   const specificity = wordCount >= 50 && wordCount <= 300 ? 18 : 8;
   const narrativeCredibility = lower.includes("i've") || lower.includes('my experience') ? 16 : 8;
-  const frictionToAction = lower.includes('ref/') ? 18 : lower.includes('alphaboost') ? 12 : 4;
+  const frictionToAction = lower.includes('ref/') ? 18 : (lower.includes('join') || lower.includes('sign up') || lower.includes('start')) ? 12 : 4;
 
   const conversion: ScoreBreakdown = {
     total: painPointResonance + curiosityGeneration + specificity + narrativeCredibility + frictionToAction,

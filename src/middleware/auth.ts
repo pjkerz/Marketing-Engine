@@ -3,9 +3,11 @@ import * as jwt from 'jsonwebtoken';
 import * as fs from 'fs';
 import { env } from '../config/env';
 import { AppError } from './errorHandler';
+import { getPrisma } from '../lib/prisma';
 
 export type Role = 'affiliate' | 'admin' | 'system';
 
+// Kept for compat routes (legacy v1 bridge — intentionally alphaboost-only)
 export const ALPHABOOST_BUSINESS_ID = '00000000-0000-0000-0000-000000000001';
 
 declare global {
@@ -39,7 +41,17 @@ function readLeadershipPassword(): string {
   }
 }
 
-export function issueOnboardingToken(affiliateCode: string, businessId: string = ALPHABOOST_BUSINESS_ID): string {
+async function resolveBusinessIdFromSlug(slug: string): Promise<string | null> {
+  try {
+    const prisma = getPrisma();
+    const biz = await prisma.business.findFirst({ where: { slug, active: true }, select: { id: true } });
+    return biz?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function issueOnboardingToken(affiliateCode: string, businessId: string): string {
   return jwt.sign(
     { affiliateCode, businessId, purpose: 'onboarding' },
     env.V2_JWT_SECRET,
@@ -59,7 +71,7 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
       if (payload.purpose === 'onboarding' && payload.affiliateCode) {
         req.actor = {
           role: 'affiliate',
-          businessId: payload.businessId || ALPHABOOST_BUSINESS_ID,
+          businessId: payload.businessId,
           affiliateCode: payload.affiliateCode,
         };
         next();
@@ -68,23 +80,35 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
 
       if (payload.role) {
         const p = payload as unknown as { role: Role; businessId?: string };
-        req.actor = {
-          role: p.role,
-          businessId: p.businessId || ALPHABOOST_BUSINESS_ID,
-        };
-        next();
-        return;
+        if (p.businessId) {
+          req.actor = { role: p.role, businessId: p.businessId };
+          next();
+          return;
+        }
       }
     } catch {
-      // fall through to check session cookie
+      // fall through to check header-based auth
     }
   }
 
-  // Try admin session: X-Admin-Password header validated against CREDS.md
+  // Try admin session: X-Admin-Password + X-Business-Slug headers
   const adminPassword = req.headers['x-admin-password'] as string | undefined;
   if (adminPassword) {
     const leadershipPassword = readLeadershipPassword();
     if (leadershipPassword && adminPassword === leadershipPassword) {
+      const slug = req.headers['x-business-slug'] as string | undefined;
+      if (slug) {
+        resolveBusinessIdFromSlug(slug).then((businessId) => {
+          if (!businessId) {
+            next(new AppError('UNAUTHORIZED', `Unknown business slug: ${slug}`, 401));
+            return;
+          }
+          req.actor = { role: 'admin', businessId };
+          next();
+        }).catch(() => next(new AppError('UNAUTHORIZED', 'Failed to resolve tenant.', 401)));
+        return;
+      }
+      // No slug provided — fall back to alphaboost for backward compat with admin.html v1
       req.actor = { role: 'admin', businessId: ALPHABOOST_BUSINESS_ID };
       next();
       return;
@@ -107,7 +131,7 @@ export function requireOnboardingToken(req: Request, _res: Response, next: NextF
     }
     req.actor = {
       role: 'affiliate',
-      businessId: payload.businessId || ALPHABOOST_BUSINESS_ID,
+      businessId: payload.businessId,
       affiliateCode: payload.affiliateCode,
     };
     next();

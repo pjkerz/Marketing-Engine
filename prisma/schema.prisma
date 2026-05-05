@@ -56,6 +56,7 @@ model BusinessConfig {
   cmsWebhookUrl   String?  // SEO content publish webhook
   autoApply       Boolean  @default(false) // AI optimisation auto-apply
   gscTokens       Json?    // Google Search Console OAuth tokens
+  gscSiteUrl      String?  // GSC property URL for this tenant
   teamUsers       Json     @default("[]") // [{username, password, email?}]
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

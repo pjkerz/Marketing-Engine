@@ -107,7 +107,7 @@ router.get('/jobs/:id', async (req: Request, res: Response, next: NextFunction) 
   try {
     const prisma = getPrisma();
     const job = await prisma.leadPullJob.findFirst({
-      where: { id: req.params.id, businessId: req.actor!.businessId },
+      where: { id: String(req.params.id), businessId: req.actor!.businessId },
     });
     if (!job) { res.status(404).json({ error: 'Job not found' }); return; }
     res.json(job);
@@ -165,7 +165,7 @@ router.patch('/:id/status', async (req: Request, res: Response, next: NextFuncti
 
     const prisma = getPrisma();
     await prisma.lead.updateMany({
-      where: { id: req.params.id, businessId: req.actor!.businessId },
+      where: { id: String(req.params.id), businessId: req.actor!.businessId },
       data: { status },
     });
 

@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "apollo": {
+      "command": "node",
+      "args": ["mcp/apollo-mcp/dist/index.js"],
+      "env": {
+        "DATABASE_URL": "${DATABASE_URL}",
+        "APOLLO_API_KEY": "${APOLLO_API_KEY}",
+        "APP_URL": "https://alphanoetic.me"
+      }
+    },
+    "engine": {
+      "command": "node",
+      "args": ["mcp/engine-mcp/dist/index.js"],
+      "env": {
+        "DATABASE_URL": "${DATABASE_URL}"
+      }
+    }
+  }
+}

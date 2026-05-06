@@ -423,31 +423,61 @@ router.get('/api/bok/download', auth_1.requireAuth, (_req, res) => {
 });
 async function getTeamUsers(businessId) {
     const prisma = (0, prisma_1.getPrisma)();
-    const config = await prisma.businessConfig.findUnique({ where: { businessId } });
-    if (!config?.teamUsers)
-        return [];
-    // Ensure teamUsers is parsed as array (in case it was stored as string)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let users = config.teamUsers;
-    if (typeof users === 'string') {
-        try {
-            users = JSON.parse(users);
+    try {
+        const config = await prisma.businessConfig.findUnique({ where: { businessId } });
+        if (!config?.teamUsers)
+            return [];
+        // Ensure teamUsers is parsed as array (in case it was stored as string)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let users = config.teamUsers;
+        if (typeof users === 'string') {
+            try {
+                users = JSON.parse(users);
+            }
+            catch {
+                return [];
+            }
         }
-        catch {
+        return Array.isArray(users) ? users : [];
+    }
+    catch (err) {
+        // Handle P2022: missing gscTokens column (database schema out of date)
+        // This is a temporary defensive measure until Prisma migration is applied in production
+        const isSchemaError = err instanceof Error &&
+            err.message?.includes('gscTokens') &&
+            err.code === 'P2022';
+        if (isSchemaError) {
+            console.warn('[getTeamUsers] database schema missing gscTokens column — returning empty, migration needed');
             return [];
         }
+        // Re-throw other errors
+        throw err;
     }
-    return Array.isArray(users) ? users : [];
 }
 async function saveTeamUsers(businessId, users) {
     const prisma = (0, prisma_1.getPrisma)();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const json = JSON.parse(JSON.stringify(users));
-    await prisma.businessConfig.upsert({
-        where: { businessId },
-        update: { teamUsers: json },
-        create: { businessId, teamUsers: json },
-    });
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const json = JSON.parse(JSON.stringify(users));
+        await prisma.businessConfig.upsert({
+            where: { businessId },
+            update: { teamUsers: json },
+            create: { businessId, teamUsers: json },
+        });
+    }
+    catch (err) {
+        // Handle P2022: missing gscTokens column (database schema out of date)
+        // This is a temporary defensive measure until Prisma migration is applied in production
+        const isSchemaError = err instanceof Error &&
+            err.message?.includes('gscTokens') &&
+            err.code === 'P2022';
+        if (isSchemaError) {
+            console.warn('[saveTeamUsers] database schema missing gscTokens column — save failed, migration needed');
+            throw new Error('Database schema out of date. Team user save temporarily unavailable. Please apply Prisma migrations.');
+        }
+        // Re-throw other errors
+        throw err;
+    }
 }
 router.get('/api/team/passwords', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
     try {

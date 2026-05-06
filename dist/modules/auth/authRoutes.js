@@ -215,7 +215,17 @@ router.post('/api/login', rateLimit_1.loginLimit, async (req, res) => {
         }
     }
     catch (err) {
-        console.error('[login] error checking team users:', err);
+        // Handle P2022: missing gscTokens column (database schema out of date)
+        // This is a temporary defensive measure until Prisma migration is applied in production
+        const isSchemaError = err instanceof Error &&
+            err.message?.includes('gscTokens') &&
+            err.code === 'P2022';
+        if (isSchemaError) {
+            console.warn('[login] database schema missing gscTokens column — team user check skipped, continuing with ADMIN_USERS');
+        }
+        else {
+            console.error('[login] error checking team users:', err);
+        }
     }
     res.status(401).json({ error: 'Invalid username or password' });
 });

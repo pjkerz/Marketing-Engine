@@ -7,6 +7,7 @@ const redis_1 = require("../../lib/redis");
 const logger_1 = require("../../lib/logger");
 const prisma_1 = require("../../lib/prisma");
 const makeWebhook_1 = require("../../lib/makeWebhook");
+const env_1 = require("../../config/env");
 let worker = null;
 function startDispatchWorker() {
     const connection = (0, redis_1.getBullRedis)();
@@ -19,8 +20,10 @@ function startDispatchWorker() {
             where: { id: runId },
             data: { status: 'dispatched', updatedAt: new Date() },
         });
-        // Fetch affiliate name for the webhook payload
+        // Fetch affiliate and their tenant config for the webhook payload
         const affiliate = await prisma.affiliate.findUnique({ where: { id: affiliateId } });
+        const bizConfig = affiliate ? await prisma.businessConfig.findUnique({ where: { businessId: affiliate.businessId }, select: { landingPageUrl: true } }) : null;
+        const appUrl = bizConfig?.landingPageUrl ?? env_1.env.APP_URL;
         // Fire Make webhook so content lands in Sendible as a draft
         await (0, makeWebhook_1.fireMakeWebhook)({
             event: 'content_approved',
@@ -29,7 +32,7 @@ function startDispatchWorker() {
             affiliateName: affiliate?.name ?? affiliateId,
             channel,
             content: run.outputContent ?? '',
-            refLink: `https://alphaboost.ngrok.app/ref/${affiliate?.code ?? affiliateId}`,
+            refLink: `${appUrl}/ref/${affiliate?.code ?? affiliateId}`,
             approvedAt: new Date().toISOString(),
         });
         logger_1.logger.info({ module: 'dispatchWorker', action: 'complete', runId, affiliateId, channel }, 'Content dispatched');

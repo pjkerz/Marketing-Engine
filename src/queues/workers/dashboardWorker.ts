@@ -1,6 +1,6 @@
 import { Worker, Queue, Job } from 'bullmq'
-import { getBullRedis } from '../../lib/redis.js'
-import { getPrisma } from '../../lib/prisma.js'
+import { getBullRedis } from '../../lib/redis'
+import { getPrisma } from '../../lib/prisma'
 
 const QUEUE_NAME = 'v2-dashboard'
 

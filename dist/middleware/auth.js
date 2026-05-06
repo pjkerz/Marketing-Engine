@@ -41,6 +41,8 @@ const jwt = __importStar(require("jsonwebtoken"));
 const fs = __importStar(require("fs"));
 const env_1 = require("../config/env");
 const errorHandler_1 = require("./errorHandler");
+const prisma_1 = require("../lib/prisma");
+// Kept for compat routes (legacy v1 bridge — intentionally alphaboost-only)
 exports.ALPHABOOST_BUSINESS_ID = '00000000-0000-0000-0000-000000000001';
 function readLeadershipPassword() {
     try {
@@ -52,7 +54,17 @@ function readLeadershipPassword() {
         return '';
     }
 }
-function issueOnboardingToken(affiliateCode, businessId = exports.ALPHABOOST_BUSINESS_ID) {
+async function resolveBusinessIdFromSlug(slug) {
+    try {
+        const prisma = (0, prisma_1.getPrisma)();
+        const biz = await prisma.business.findFirst({ where: { slug, active: true }, select: { id: true } });
+        return biz?.id ?? null;
+    }
+    catch {
+        return null;
+    }
+}
+function issueOnboardingToken(affiliateCode, businessId) {
     return jwt.sign({ affiliateCode, businessId, purpose: 'onboarding' }, env_1.env.V2_JWT_SECRET, { expiresIn: '7d' });
 }
 function requireAuth(req, _res, next) {
@@ -65,7 +77,7 @@ function requireAuth(req, _res, next) {
             if (payload.purpose === 'onboarding' && payload.affiliateCode) {
                 req.actor = {
                     role: 'affiliate',
-                    businessId: payload.businessId || exports.ALPHABOOST_BUSINESS_ID,
+                    businessId: payload.businessId,
                     affiliateCode: payload.affiliateCode,
                 };
                 next();
@@ -73,26 +85,15 @@ function requireAuth(req, _res, next) {
             }
             if (payload.role) {
                 const p = payload;
-                req.actor = {
-                    role: p.role,
-                    businessId: p.businessId || exports.ALPHABOOST_BUSINESS_ID,
-                };
-                next();
-                return;
+                if (p.businessId) {
+                    req.actor = { role: p.role, businessId: p.businessId };
+                    next();
+                    return;
+                }
             }
         }
         catch {
-            // fall through to check session cookie
-        }
-    }
-    // Try admin session: X-Admin-Password header validated against CREDS.md
-    const adminPassword = req.headers['x-admin-password'];
-    if (adminPassword) {
-        const leadershipPassword = readLeadershipPassword();
-        if (leadershipPassword && adminPassword === leadershipPassword) {
-            req.actor = { role: 'admin', businessId: exports.ALPHABOOST_BUSINESS_ID };
-            next();
-            return;
+            // fall through to check header-based auth
         }
     }
     next(new errorHandler_1.AppError('UNAUTHORIZED', 'Authentication required.', 401));
@@ -110,7 +111,7 @@ function requireOnboardingToken(req, _res, next) {
         }
         req.actor = {
             role: 'affiliate',
-            businessId: payload.businessId || exports.ALPHABOOST_BUSINESS_ID,
+            businessId: payload.businessId,
             affiliateCode: payload.affiliateCode,
         };
         next();

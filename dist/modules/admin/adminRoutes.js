@@ -42,6 +42,7 @@ const rateLimit_1 = require("../../middleware/rateLimit");
 const profileRoutes_1 = require("../profile/profileRoutes");
 const logger_1 = require("../../lib/logger");
 const makeWebhook_1 = require("../../lib/makeWebhook");
+const env_1 = require("../../config/env");
 const router = (0, express_1.Router)();
 async function findAffiliateScoped(prisma, code, businessId) {
     const affiliate = await prisma.affiliate.findFirst({ where: { code, businessId } });
@@ -116,8 +117,10 @@ router.get('/affiliates/:code/onboarding-link', async (req, res, next) => {
     try {
         const prisma = (0, prisma_1.getPrisma)();
         const affiliate = await findAffiliateScoped(prisma, req.params["code"], req.actor.businessId);
+        const config = await prisma.businessConfig.findUnique({ where: { businessId: req.actor.businessId }, select: { landingPageUrl: true } });
+        const appUrl = config?.landingPageUrl ?? env_1.env.APP_URL;
         const token = (0, auth_1.issueOnboardingToken)(affiliate.code, affiliate.businessId);
-        const link = `https://alphaboost.ngrok.app/v2/connect?token=${token}`;
+        const link = `${appUrl}/v2/connect?token=${token}`;
         res.json({ code: affiliate.code, name: affiliate.name, link });
     }
     catch (err) {
@@ -329,6 +332,8 @@ router.post('/affiliates/:code/content/:runId/approve', async (req, res, next) =
                 changes: { channel: run.channel },
             },
         });
+        const bizConfig = await prisma.businessConfig.findUnique({ where: { businessId: req.actor.businessId }, select: { landingPageUrl: true } });
+        const appUrl = bizConfig?.landingPageUrl ?? env_1.env.APP_URL;
         // Fire Make webhook (non-blocking — failure never breaks approval)
         await (0, makeWebhook_1.fireMakeWebhook)({
             event: 'content_approved',
@@ -337,7 +342,7 @@ router.post('/affiliates/:code/content/:runId/approve', async (req, res, next) =
             affiliateName: affiliate.name,
             channel: run.channel,
             content: run.outputContent ?? '',
-            refLink: `https://alphaboost.ngrok.app/ref/${affiliate.code}`,
+            refLink: `${appUrl}/ref/${affiliate.code}`,
             approvedAt: new Date().toISOString(),
         });
         logger_1.logger.info({ module: 'adminRoutes', action: 'contentApproved', runId: run.id }, 'Content approved');

@@ -82,6 +82,8 @@ const EnvSchema = zod_1.z.object({
     // Comma-separated admin credentials: "user1:pass1,user2:pass2"
     ADMIN_USERS: zod_1.z.string().optional(),
     CONSOLE_PASSWORD: zod_1.z.string().optional(),
+    // SECURITY: Admin PIN for /api/admin/verify-pin endpoint (must be 6+ digits)
+    ADMIN_PIN: zod_1.z.string().min(6, 'ADMIN_PIN must be at least 6 characters').optional(),
     // Make.com webhook — fires when content is approved for Sendible
     MAKE_WEBHOOK_URL: zod_1.z.string().url().optional(),
     // Resend email sending
@@ -91,10 +93,11 @@ const EnvSchema = zod_1.z.object({
     // Tracking pixel
     TRACKING_PIXEL_SECRET: zod_1.z.string().optional(),
     SESSION_STITCH_SECRET: zod_1.z.string().optional(),
+    // Public app URL (used for OAuth callbacks and email links)
+    APP_URL: zod_1.z.string().url().default('https://alphanoetic.me'),
     // Google OAuth (Search Console + YouTube)
     GOOGLE_CLIENT_ID: zod_1.z.string().optional(),
     GOOGLE_CLIENT_SECRET: zod_1.z.string().optional(),
-    GSC_SITE_URL: zod_1.z.string().default('https://alphanoetic.me/'),
     // LinkedIn OAuth
     LI_CLIENT_ID: zod_1.z.string().optional(),
     LI_CLIENT_SECRET: zod_1.z.string().optional(),

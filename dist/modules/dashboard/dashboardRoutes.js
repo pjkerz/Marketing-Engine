@@ -5,29 +5,29 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAffiliatePerformance = getAffiliatePerformance;
 const express_1 = require("express");
-const prisma_js_1 = require("../../lib/prisma.js");
-const auth_js_1 = require("../../middleware/auth.js");
-const dashboardWorker_js_1 = require("../../queues/workers/dashboardWorker.js");
-const env_js_1 = require("../../config/env.js");
+const prisma_1 = require("../../lib/prisma");
+const auth_1 = require("../../middleware/auth");
+const dashboardWorker_1 = require("../../queues/workers/dashboardWorker");
+const env_1 = require("../../config/env");
 const https_1 = __importDefault(require("https"));
 const router = (0, express_1.Router)();
 // GET /v2/api/admin/dashboard?days=30
-router.get('/', auth_js_1.requireAuth, async (req, res) => {
-    const prisma = (0, prisma_js_1.getPrisma)();
+router.get('/', auth_1.requireAuth, async (req, res) => {
+    const prisma = (0, prisma_1.getPrisma)();
     const { businessId } = req.actor;
     const days = parseInt(req.query.days) || 30;
     const snapshot = await prisma.dashboardSnapshot.findFirst({ where: { businessId }, orderBy: { createdAt: 'desc' } });
     const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
     if (!snapshot || snapshot.createdAt < twoHoursAgo) {
-        if (dashboardWorker_js_1.dashboardQueue)
-            await dashboardWorker_js_1.dashboardQueue.add('snapshot-immediate', {}, { priority: 1 });
-        return res.json(await (0, dashboardWorker_js_1.computeDashboardData)(businessId, days));
+        if (dashboardWorker_1.dashboardQueue)
+            await dashboardWorker_1.dashboardQueue.add('snapshot-immediate', {}, { priority: 1 });
+        return res.json(await (0, dashboardWorker_1.computeDashboardData)(businessId, days));
     }
     res.json(snapshot.data);
 });
 // GET /v2/api/admin/dashboard/content-performance?days=30&channel=linkedin
-router.get('/content-performance', auth_js_1.requireAuth, async (req, res) => {
-    const prisma = (0, prisma_js_1.getPrisma)();
+router.get('/content-performance', auth_1.requireAuth, async (req, res) => {
+    const prisma = (0, prisma_1.getPrisma)();
     const { businessId } = req.actor;
     const days = parseInt(req.query.days) || 30;
     const channel = typeof req.query.channel === 'string' ? req.query.channel : undefined;
@@ -52,8 +52,8 @@ router.get('/content-performance', auth_js_1.requireAuth, async (req, res) => {
     res.json({ content });
 });
 // GET /v2/api/admin/dashboard/channel-performance?days=30
-router.get('/channel-performance', auth_js_1.requireAuth, async (req, res) => {
-    const prisma = (0, prisma_js_1.getPrisma)();
+router.get('/channel-performance', auth_1.requireAuth, async (req, res) => {
+    const prisma = (0, prisma_1.getPrisma)();
     const { businessId } = req.actor;
     const days = parseInt(req.query.days) || 30;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -69,8 +69,8 @@ router.get('/channel-performance', auth_js_1.requireAuth, async (req, res) => {
     res.json({ channels });
 });
 // GET /v2/api/admin/dashboard/affiliate-leaderboard?days=30
-router.get('/affiliate-leaderboard', auth_js_1.requireAuth, async (req, res) => {
-    const prisma = (0, prisma_js_1.getPrisma)();
+router.get('/affiliate-leaderboard', auth_1.requireAuth, async (req, res) => {
+    const prisma = (0, prisma_1.getPrisma)();
     const { businessId } = req.actor;
     const days = parseInt(req.query.days) || 30;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -88,8 +88,8 @@ router.get('/affiliate-leaderboard', auth_js_1.requireAuth, async (req, res) => 
     res.json({ leaderboard });
 });
 // GET /v2/api/admin/dashboard/funnel?days=30
-router.get('/funnel', auth_js_1.requireAuth, async (req, res) => {
-    const prisma = (0, prisma_js_1.getPrisma)();
+router.get('/funnel', auth_1.requireAuth, async (req, res) => {
+    const prisma = (0, prisma_1.getPrisma)();
     const { businessId } = req.actor;
     const days = parseInt(req.query.days) || 30;
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
@@ -105,7 +105,7 @@ router.get('/funnel', auth_js_1.requireAuth, async (req, res) => {
 });
 // GET /v2/api/affiliate/:code/performance
 async function getAffiliatePerformance(req, res) {
-    const prisma = (0, prisma_js_1.getPrisma)();
+    const prisma = (0, prisma_1.getPrisma)();
     const code = req.params['code'];
     const { businessId } = req.actor;
     const days = parseInt(req.query.days) || 30;
@@ -144,11 +144,11 @@ async function getAffiliatePerformance(req, res) {
         }
     }
     let recommendation = 'Keep posting consistently and focus on your best-performing platform.';
-    if (totalClicks >= 20 && env_js_1.env.GROQ_API_KEY) {
+    if (totalClicks >= 20 && env_1.env.GROQ_API_KEY) {
         try {
             const body = JSON.stringify({ model: 'llama-3.1-8b-instant', messages: [{ role: 'user', content: `Affiliate has ${cvr}% CVR across ${totalClicks} clicks. Platforms: ${JSON.stringify(byPlatform)}. Platform avg CVR: ${platformAvgCvr}%. One sentence: what to focus on next week?` }], max_tokens: 80 });
             recommendation = await new Promise((resolve, reject) => {
-                const r = https_1.default.request({ hostname: 'api.groq.com', path: '/openai/v1/chat/completions', method: 'POST', headers: { 'Authorization': `Bearer ${env_js_1.env.GROQ_API_KEY}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } }, res2 => {
+                const r = https_1.default.request({ hostname: 'api.groq.com', path: '/openai/v1/chat/completions', method: 'POST', headers: { 'Authorization': `Bearer ${env_1.env.GROQ_API_KEY}`, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } }, res2 => {
                     let d = '';
                     res2.on('data', (c) => { d += c; });
                     res2.on('end', () => { try {

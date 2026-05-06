@@ -1,9 +1,9 @@
 import { Router, Request, Response } from 'express'
-import { getPrisma } from '../../lib/prisma.js'
-import { requireAuth } from '../../middleware/auth.js'
-import { buildBusinessContext } from './contextBuilder.js'
-import { generateRecommendations } from './recommendationEngine.js'
-import { executeRecommendation } from './autoExecutor.js'
+import { getPrisma } from '../../lib/prisma'
+import { requireAuth } from '../../middleware/auth'
+import { buildBusinessContext } from './contextBuilder'
+import { generateRecommendations } from './recommendationEngine'
+import { executeRecommendation } from './autoExecutor'
 
 const router = Router()
 

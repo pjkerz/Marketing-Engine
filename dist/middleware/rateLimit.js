@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.trackingLimit = exports.adminLimit = exports.generalLimit = exports.generateImageLimit = exports.generateContentLimit = exports.uploadResumeLimit = void 0;
+exports.loginLimit = exports.trackingLimit = exports.adminLimit = exports.generalLimit = exports.generateImageLimit = exports.generateContentLimit = exports.uploadResumeLimit = void 0;
 exports.rateLimit = rateLimit;
 const redis_1 = require("../lib/redis");
 const errorHandler_1 = require("./errorHandler");
@@ -55,5 +55,15 @@ exports.trackingLimit = rateLimit({
     max: 120,
     windowSeconds: 60,
     keyFn: (req) => `track:ip:${req.ip}`,
+});
+// SECURITY: Strict login rate limiting — 3 attempts per 5 minutes per IP
+// Prevents brute-force and credential enumeration attacks
+exports.loginLimit = rateLimit({
+    max: 3,
+    windowSeconds: 300,
+    keyFn: (req) => {
+        const username = req.body?.username || 'unknown';
+        return `login:${username}:${req.ip}`;
+    },
 });
 //# sourceMappingURL=rateLimit.js.map

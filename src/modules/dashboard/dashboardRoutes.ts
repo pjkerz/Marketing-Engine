@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express'
-import { getPrisma } from '../../lib/prisma.js'
-import { requireAuth } from '../../middleware/auth.js'
-import { computeDashboardData, dashboardQueue } from '../../queues/workers/dashboardWorker.js'
-import { env } from '../../config/env.js'
+import { getPrisma } from '../../lib/prisma'
+import { requireAuth } from '../../middleware/auth'
+import { computeDashboardData, dashboardQueue } from '../../queues/workers/dashboardWorker'
+import { env } from '../../config/env'
 import https from 'https'
 
 const router = Router()

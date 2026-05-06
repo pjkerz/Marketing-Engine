@@ -1,7 +1,7 @@
 import https from 'https'
-import { getPrisma } from '../../lib/prisma.js'
-import { env } from '../../config/env.js'
-import { IntelligenceContext } from './contextBuilder.js'
+import { getPrisma } from '../../lib/prisma'
+import { env } from '../../config/env'
+import { IntelligenceContext } from './contextBuilder'
 
 async function callGroq(systemPrompt: string, userContent: string): Promise<string> {
   const body = JSON.stringify({

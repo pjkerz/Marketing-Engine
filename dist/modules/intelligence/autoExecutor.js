@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.executeRecommendation = executeRecommendation;
-const prisma_js_1 = require("../../lib/prisma.js");
-const env_js_1 = require("../../config/env.js");
+const prisma_1 = require("../../lib/prisma");
+const env_1 = require("../../config/env");
 async function executeRecommendation(recommendationId, businessId) {
-    const prisma = (0, prisma_js_1.getPrisma)();
+    const prisma = (0, prisma_1.getPrisma)();
     const rec = await prisma.crossChannelRecommendation.findFirst({ where: { id: recommendationId, businessId } });
     if (!rec)
         throw new Error('Recommendation not found');
@@ -18,7 +18,7 @@ async function executeRecommendation(recommendationId, businessId) {
                 results.push({ channel: action.channel, action: action.action, success: true });
                 continue;
             }
-            const baseUrl = `http://localhost:${env_js_1.env.PORT}`;
+            const baseUrl = `http://localhost:${env_1.env.PORT}`;
             const resp = await fetch(`${baseUrl}${action.endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-admin-password': process.env.CONSOLE_PASSWORD ?? '' },

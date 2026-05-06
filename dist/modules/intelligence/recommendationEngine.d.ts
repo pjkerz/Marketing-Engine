@@ -1,15 +1,15 @@
-import { IntelligenceContext } from './contextBuilder.js';
+import { IntelligenceContext } from './contextBuilder';
 export declare function generateRecommendations(context: IntelligenceContext, businessId: string): Promise<{
     status: string;
-    businessId: string;
-    priority: string;
     id: string;
     createdAt: Date;
+    businessId: string;
+    priority: string;
     recommendation: string;
     title: string;
     channels: string[];
     insight: string;
-    actions: import("@prisma/client/runtime/library.js").JsonValue;
+    actions: import("@prisma/client/runtime/library").JsonValue;
     estimatedImpact: string;
     autoExecutable: boolean;
     executedAt: Date | null;

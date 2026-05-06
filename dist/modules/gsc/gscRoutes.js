@@ -1,21 +1,21 @@
 "use strict";
 /**
- * gscRoutes.ts — Google Search Console integration
+ * gscRoutes.ts — Google Search Console integration (per-tenant)
  *
- * OAuth flow:  GET /api/gsc/connect   → redirects to Google
- *              GET /auth/google/callback → exchanges code, stores tokens in DB businessConfig
+ * OAuth flow:  GET /api/gsc/connect                       → redirects to Google (tenant from req.actor)
+ *              GET /auth/google/callback                  → exchanges code, stores tokens in tenant's BusinessConfig
  * Data:        GET /api/gsc/status
  *              GET /api/gsc/search-analytics
  *              GET /api/gsc/pages
+ *              POST /api/gsc/site-url  — set the GSC property URL for this tenant
  */
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../../middleware/auth");
 const prisma_1 = require("../../lib/prisma");
 const env_1 = require("../../config/env");
-const auth_2 = require("../../middleware/auth");
 const router = (0, express_1.Router)();
-const REDIRECT_URI = 'https://alphanoetic.me/auth/google/callback';
+const REDIRECT_URI = `${env_1.env.APP_URL ?? 'https://alphanoetic.me'}/auth/google/callback`;
 const SCOPES = 'https://www.googleapis.com/auth/webmasters.readonly';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -26,10 +26,10 @@ function requireAdmin(req, res, next) {
     }
     next();
 }
-async function getStoredTokens() {
+async function getStoredTokens(businessId) {
     try {
         const prisma = (0, prisma_1.getPrisma)();
-        const config = await prisma.businessConfig.findUnique({ where: { businessId: auth_2.ALPHABOOST_BUSINESS_ID } });
+        const config = await prisma.businessConfig.findUnique({ where: { businessId } });
         const tokens = config['gscTokens'];
         return tokens ?? null;
     }
@@ -37,27 +37,25 @@ async function getStoredTokens() {
         return null;
     }
 }
-async function saveTokens(tokens) {
+async function saveTokens(businessId, tokens) {
     const prisma = (0, prisma_1.getPrisma)();
     const expires_at = Date.now() + ((tokens.expires_in ?? 3600) - 60) * 1000;
     await prisma.$executeRaw `
     UPDATE "business_configs"
     SET "gscTokens" = ${JSON.stringify({ access_token: tokens.access_token, refresh_token: tokens.refresh_token, expires_at })}::jsonb
-    WHERE "businessId" = ${auth_2.ALPHABOOST_BUSINESS_ID}
+    WHERE "businessId" = ${businessId}
   `;
 }
-async function getAccessToken() {
+async function getAccessToken(businessId) {
     if (!env_1.env.GOOGLE_CLIENT_ID || !env_1.env.GOOGLE_CLIENT_SECRET) {
         throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are not configured');
     }
-    const stored = await getStoredTokens();
+    const stored = await getStoredTokens(businessId);
     if (!stored?.refresh_token)
-        throw new Error('Not connected to Google Search Console. Visit /admin and use GSC → Connect.');
-    // Return cached token if still valid
+        throw new Error('Not connected to Google Search Console. Use GSC → Connect in admin.');
     if (stored.access_token && stored.expires_at && Date.now() < stored.expires_at) {
         return stored.access_token;
     }
-    // Refresh
     const resp = await fetch(TOKEN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -71,29 +69,52 @@ async function getAccessToken() {
     if (!resp.ok)
         throw new Error('Failed to refresh Google token');
     const data = await resp.json();
-    await saveTokens({ access_token: data.access_token, refresh_token: stored.refresh_token, expires_in: data.expires_in });
+    await saveTokens(businessId, { access_token: data.access_token, refresh_token: stored.refresh_token, expires_in: data.expires_in });
     return data.access_token;
 }
+async function getSiteUrl(businessId) {
+    const prisma = (0, prisma_1.getPrisma)();
+    const config = await prisma.businessConfig.findUnique({ where: { businessId }, select: { gscSiteUrl: true } });
+    if (!config?.gscSiteUrl)
+        throw new Error('GSC site URL not configured for this tenant. Use POST /api/gsc/site-url to set it.');
+    return config.gscSiteUrl;
+}
 // ── GET /api/gsc/connect — Start OAuth flow ────────────────────────────────────
-router.get('/api/gsc/connect', auth_1.requireAuth, requireAdmin, (_req, res) => {
+router.get('/api/gsc/connect', auth_1.requireAuth, requireAdmin, (req, res) => {
     if (!env_1.env.GOOGLE_CLIENT_ID) {
         res.status(503).json({ error: 'GOOGLE_CLIENT_ID not set in environment' });
         return;
     }
+    // Pass businessId through OAuth state so the callback knows which tenant to save tokens for
+    const state = Buffer.from(req.actor.businessId).toString('base64');
     const url = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${encodeURIComponent(env_1.env.GOOGLE_CLIENT_ID)}` +
         `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
         `&response_type=code` +
         `&scope=${encodeURIComponent(SCOPES)}` +
-        `&access_type=offline&prompt=consent`;
+        `&access_type=offline&prompt=consent` +
+        `&state=${encodeURIComponent(state)}`;
     res.redirect(url);
 });
 // ── GET /auth/google/callback — OAuth callback ─────────────────────────────────
 router.get('/auth/google/callback', async (req, res) => {
-    const { code, error } = req.query;
+    const { code, error, state } = req.query;
     if (error || !code) {
         res.send(`<html><body style="font-family:monospace;background:#020617;color:#f87171;padding:40px">
       <h2>Google OAuth Failed</h2><p>${error || 'No authorization code received'}</p>
+      <p><a href="/admin" style="color:#00C8FF">← Back to Admin</a></p>
+    </body></html>`);
+        return;
+    }
+    let businessId;
+    try {
+        businessId = Buffer.from(decodeURIComponent(state ?? ''), 'base64').toString('utf8');
+        if (!businessId)
+            throw new Error('missing');
+    }
+    catch {
+        res.send(`<html><body style="font-family:monospace;background:#020617;color:#f87171;padding:40px">
+      <h2>OAuth Error</h2><p>Missing or invalid state — cannot determine tenant.</p>
       <p><a href="/admin" style="color:#00C8FF">← Back to Admin</a></p>
     </body></html>`);
         return;
@@ -117,7 +138,7 @@ router.get('/auth/google/callback', async (req, res) => {
             throw new Error(`Token exchange failed: ${txt}`);
         }
         const tokens = await resp.json();
-        await saveTokens(tokens);
+        await saveTokens(businessId, tokens);
         res.send(`<html><body style="font-family:monospace;background:#020617;color:#34d399;padding:40px">
       <h2>✓ Google Search Console Connected</h2>
       <p>Tokens saved. You can close this tab.</p>
@@ -133,22 +154,47 @@ router.get('/auth/google/callback', async (req, res) => {
     </body></html>`);
     }
 });
+// ── POST /api/gsc/site-url — Set the GSC property URL for this tenant ──────────
+router.post('/api/gsc/site-url', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+        const { siteUrl } = req.body;
+        if (!siteUrl) {
+            res.status(400).json({ error: 'siteUrl required' });
+            return;
+        }
+        const prisma = (0, prisma_1.getPrisma)();
+        await prisma.businessConfig.update({
+            where: { businessId: req.actor.businessId },
+            data: { gscSiteUrl: siteUrl },
+        });
+        res.json({ ok: true, siteUrl });
+    }
+    catch (err) {
+        next(err);
+    }
+});
 // ── GET /api/gsc/status ────────────────────────────────────────────────────────
-router.get('/api/gsc/status', auth_1.requireAuth, requireAdmin, async (_req, res) => {
-    const tokens = await getStoredTokens();
+router.get('/api/gsc/status', auth_1.requireAuth, requireAdmin, async (req, res) => {
+    const prisma = (0, prisma_1.getPrisma)();
+    const config = await prisma.businessConfig.findUnique({
+        where: { businessId: req.actor.businessId },
+        select: { gscTokens: true, gscSiteUrl: true },
+    });
+    const tokens = config?.gscTokens;
     res.json({
         connected: !!tokens?.refresh_token,
         hasRefreshToken: !!tokens?.refresh_token,
         configured: !!(env_1.env.GOOGLE_CLIENT_ID && env_1.env.GOOGLE_CLIENT_SECRET),
+        siteUrl: config?.gscSiteUrl ?? null,
         connectUrl: '/api/gsc/connect',
     });
 });
-// ── GET /api/gsc/disconnect ────────────────────────────────────────────────────
-router.post('/api/gsc/disconnect', auth_1.requireAuth, requireAdmin, async (_req, res, next) => {
+// ── POST /api/gsc/disconnect ────────────────────────────────────────────────────
+router.post('/api/gsc/disconnect', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
     try {
         const prisma = (0, prisma_1.getPrisma)();
         await prisma.$executeRaw `
-      UPDATE "business_configs" SET "gscTokens" = NULL WHERE "businessId" = ${auth_2.ALPHABOOST_BUSINESS_ID}
+      UPDATE "business_configs" SET "gscTokens" = NULL WHERE "businessId" = ${req.actor.businessId}
     `;
         res.json({ ok: true });
     }
@@ -159,14 +205,15 @@ router.post('/api/gsc/disconnect', auth_1.requireAuth, requireAdmin, async (_req
 // ── GET /api/gsc/search-analytics ─────────────────────────────────────────────
 router.get('/api/gsc/search-analytics', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
     try {
-        const accessToken = await getAccessToken();
+        const businessId = req.actor.businessId;
+        const accessToken = await getAccessToken(businessId);
+        const siteUrl = await getSiteUrl(businessId);
         const days = parseInt(req.query['days'] || '28');
         const rowLimit = parseInt(req.query['rowLimit'] || '25');
         const dimension = req.query['dimension'] || 'query';
         const startDate = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
         const endDate = new Date().toISOString().slice(0, 10);
-        const siteUrl = encodeURIComponent(env_1.env.GSC_SITE_URL);
-        const gscResp = await fetch(`https://searchconsole.googleapis.com/webmasters/v3/sites/${siteUrl}/searchAnalytics/query`, {
+        const gscResp = await fetch(`https://searchconsole.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
             body: JSON.stringify({
@@ -191,12 +238,13 @@ router.get('/api/gsc/search-analytics', auth_1.requireAuth, requireAdmin, async 
 // ── GET /api/gsc/pages ─────────────────────────────────────────────────────────
 router.get('/api/gsc/pages', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
     try {
-        const accessToken = await getAccessToken();
+        const businessId = req.actor.businessId;
+        const accessToken = await getAccessToken(businessId);
+        const siteUrl = await getSiteUrl(businessId);
         const days = parseInt(req.query['days'] || '28');
         const startDate = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
         const endDate = new Date().toISOString().slice(0, 10);
-        const siteUrl = encodeURIComponent(env_1.env.GSC_SITE_URL);
-        const gscResp = await fetch(`https://searchconsole.googleapis.com/webmasters/v3/sites/${siteUrl}/searchAnalytics/query`, {
+        const gscResp = await fetch(`https://searchconsole.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
             body: JSON.stringify({

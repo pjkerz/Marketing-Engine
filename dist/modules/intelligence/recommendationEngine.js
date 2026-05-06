@@ -5,8 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateRecommendations = generateRecommendations;
 const https_1 = __importDefault(require("https"));
-const prisma_js_1 = require("../../lib/prisma.js");
-const env_js_1 = require("../../config/env.js");
+const prisma_1 = require("../../lib/prisma");
+const env_1 = require("../../config/env");
 async function callGroq(systemPrompt, userContent) {
     const body = JSON.stringify({
         model: 'llama-3.3-70b-versatile',
@@ -23,7 +23,7 @@ async function callGroq(systemPrompt, userContent) {
             path: '/openai/v1/chat/completions',
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${env_js_1.env.GROQ_API_KEY}`,
+                'Authorization': `Bearer ${env_1.env.GROQ_API_KEY}`,
                 'Content-Type': 'application/json',
                 'Content-Length': Buffer.byteLength(body),
             },
@@ -45,7 +45,7 @@ async function callGroq(systemPrompt, userContent) {
     });
 }
 async function generateRecommendations(context, businessId) {
-    const prisma = (0, prisma_js_1.getPrisma)();
+    const prisma = (0, prisma_1.getPrisma)();
     const systemPrompt = `You are a senior digital marketing strategist for ${context.businessName} (${context.businessType} business).
 Generate specific, data-backed, cross-channel recommendations.
 ALWAYS reference specific numbers from the data.

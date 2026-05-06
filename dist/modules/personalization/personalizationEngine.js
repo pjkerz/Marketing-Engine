@@ -78,36 +78,41 @@ const CHANNEL_FORMAT = {
     slack: (t) => t,
     telegram: (t) => t,
 };
-const CTA_MAP = {
-    invisible: '',
-    soft: 'Worth exploring if this resonates.',
-    direct: 'Check it out at alphaboost.app',
-    strong: '👉 Start now at alphaboost.app — free to join.',
-};
+function buildCtaMap(landingUrl) {
+    const domain = (() => { try {
+        return new URL(landingUrl).hostname;
+    }
+    catch {
+        return landingUrl;
+    } })();
+    return {
+        invisible: '',
+        soft: 'Worth exploring if this resonates.',
+        direct: `Check it out at ${domain}`,
+        strong: `👉 Start now at ${domain} — free to join.`,
+    };
+}
 function personalize(input) {
-    const { baseContent, channel, affiliateCode, profile } = input;
+    const { baseContent, channel, affiliateCode, profile, tenantLandingUrl } = input;
     let content = baseContent;
     // 1. Pain-point hook injection
     if (profile.painPoint && profile.seniority && profile.role) {
-        const hook = `Most ${profile.seniority} ${profile.role}s are struggling with ${profile.painPoint}. `;
+        const hook = `Most ${profile.seniority} ${profile.role} professionals are struggling with ${profile.painPoint}. `;
         content = hook + content;
     }
     // 2. Authority signal framing
     if (profile.authoritySignal) {
         const signal = `\n\nFrom what I've seen in ${profile.authoritySignal}: `;
-        // Insert before the last sentence
         const lastDot = content.lastIndexOf('. ');
         if (lastDot > 0) {
             content = content.slice(0, lastDot + 2) + signal + content.slice(lastDot + 2);
         }
     }
     // 3. Tone calibration
-    const directness = profile.directness;
-    const provocation = profile.provocation;
-    if (directness > 0.7) {
+    if (profile.directness > 0.7) {
         content = content.replace(/\bmight\b/g, 'will').replace(/\bcould\b/g, 'can');
     }
-    if (provocation > 0.6) {
+    if (profile.provocation > 0.6) {
         if (!content.includes('?')) {
             const firstStop = content.indexOf('. ');
             if (firstStop > 0) {
@@ -116,20 +121,17 @@ function personalize(input) {
         }
     }
     // 4. CTA calibration
-    const ctaText = CTA_MAP[profile.ctaStrength] ?? CTA_MAP['soft'];
+    const ctaMap = buildCtaMap(tenantLandingUrl);
+    const ctaText = ctaMap[profile.ctaStrength] ?? ctaMap['soft'];
     if (ctaText) {
         content = `${content}\n\n${ctaText}`;
     }
     // 5. Channel format adjustments
     const formatter = CHANNEL_FORMAT[channel] ?? ((t) => t);
     content = formatter(content);
-    // 6. Affiliate ref link injection
-    content = content.replace(/https:\/\/alphaboost\.app(?!\/ref\/)/g, `https://alphaboost.app/ref/${affiliateCode}`);
-    // 7. Remove any fabricated credentials (safety: only use what's in profile)
-    // Naive filter: strip common fake claim patterns not grounded in profile
-    const safeRole = profile.role?.toLowerCase() ?? '';
-    const safeIndustries = (profile.industries ?? []).map((i) => i.toLowerCase());
-    // No fabrication guard beyond this — content comes from controlled LLM prompt
+    // 6. Affiliate ref link injection — replace bare landing URL with ref link
+    const escapedUrl = tenantLandingUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    content = content.replace(new RegExp(`${escapedUrl}(?!\\/ref\\/)`, 'g'), `${tenantLandingUrl}/ref/${affiliateCode}`);
     return content.trim();
 }
 //# sourceMappingURL=personalizationEngine.js.map

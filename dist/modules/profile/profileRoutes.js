@@ -275,7 +275,7 @@ router.post('/:code/content/generate', auth_1.requireAuth, rbac_1.requireOwnAffi
         // Get BOK context — pull relevant podcast knowledge for this brief/channel
         const business = await prisma.business.findUnique({ where: { id: affiliate.businessId }, select: { slug: true } });
         const bokTopic = brief || channels.join(' ') + ' career growth AI professional';
-        const bokContext = (0, bokReader_1.readBokChunks)(business?.slug ?? 'alphaboost', bokTopic);
+        const bokContext = (0, bokReader_1.readBokChunks)(business?.slug ?? '', bokTopic);
         // Get business config for brand voice
         const config = await prisma.businessConfig.findUnique({ where: { businessId: affiliate.businessId } });
         const brandName = config?.brandName ?? 'AlphaNoetics';
@@ -306,8 +306,9 @@ router.post('/:code/content/generate', auth_1.requireAuth, rbac_1.requireOwnAffi
                 responseFormat: 'text',
                 requestId: req.requestId,
             });
+            const tenantLandingUrl = config?.landingPageUrl ?? env_1.env.APP_URL;
             const personalized = profile
-                ? (0, personalizationEngine_1.personalize)({ baseContent, channel, affiliateCode: req.params["code"], profile })
+                ? (0, personalizationEngine_1.personalize)({ baseContent, channel, affiliateCode: req.params["code"], profile, tenantLandingUrl })
                 : baseContent;
             const run = await prisma.contentGenerationRun.create({
                 data: {
@@ -818,13 +819,17 @@ router.post('/:code/plan/slots/:slotId/generate', auth_1.requireAuth, rbac_1.req
         const instance = await prisma.affiliateInstance.findUnique({ where: { affiliateId: affiliate.id } });
         const themeHint = instance?.contentThemes?.join(', ') ?? '';
         // Generate content via LLM synchronously so affiliate gets result immediately
+        const slotBizConfig = await prisma.businessConfig.findUnique({ where: { businessId: affiliate.businessId } });
+        const slotBrandName = slotBizConfig?.brandName ?? 'AlphaNoetics';
+        const slotBrandVoice = slotBizConfig?.brandVoice ?? 'authentic, direct, and insight-driven';
+        const slotLandingUrl = slotBizConfig?.landingPageUrl ?? env_1.env.APP_URL;
         const { llmClient } = await Promise.resolve().then(() => __importStar(require('../../integrations/llm/llmClient')));
         const optimisationHints = await (0, personalizationEngine_1.applyOptimisationToGeneration)(affiliate.businessId, { channel: slot.platform });
         const formatHint = optimisationHints.preferredFormat ? ` Use ${optimisationHints.preferredFormat} format.` : '';
         const themeInstruction = themeHint ? ` Topics to include: ${themeHint}.` : '';
         const baseContent = await llmClient.complete({
             model: env_1.env.GROQ_MODEL_CONTENT,
-            systemPrompt: `You are a professional content writer for AlphaBoost, an AI career acceleration platform. Write a ${slot.platform} post that helps career-focused professionals.${formatHint}${themeInstruction}`,
+            systemPrompt: `You are a professional content writer for ${slotBrandName}. Brand voice: ${slotBrandVoice}. Write a ${slot.platform} post that helps career-focused professionals.${formatHint}${themeInstruction}`,
             userPrompt: `Write a compelling ${slot.platform} post about AI career acceleration and professional growth.`,
             maxTokens: 512,
             responseFormat: 'text',
@@ -835,6 +840,7 @@ router.post('/:code/plan/slots/:slotId/generate', auth_1.requireAuth, rbac_1.req
             channel: slot.platform,
             affiliateCode: affiliate.code,
             profile,
+            tenantLandingUrl: slotLandingUrl,
         });
         const run = await prisma.contentGenerationRun.create({
             data: {

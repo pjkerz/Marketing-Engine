@@ -27,12 +27,12 @@ export declare function computeDashboardData(businessId: string, days?: number):
     }[];
     insights: {
         status: string;
-        businessId: string;
         id: string;
         createdAt: Date;
+        businessId: string;
         insightType: string;
         finding: string;
-        evidence: import("@prisma/client/runtime/library.js").JsonValue;
+        evidence: import("@prisma/client/runtime/library").JsonValue;
         recommendation: string;
         impact: string;
         appliedAt: Date | null;
@@ -41,11 +41,11 @@ export declare function computeDashboardData(businessId: string, days?: number):
     activeTests: {
         type: string;
         status: string;
-        businessId: string;
-        name: string;
         id: string;
+        name: string;
         createdAt: Date;
-        variants: import("@prisma/client/runtime/library.js").JsonValue;
+        businessId: string;
+        variants: import("@prisma/client/runtime/library").JsonValue;
         winnerVariantId: string | null;
         startedAt: Date;
         endedAt: Date | null;

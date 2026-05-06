@@ -11,5 +11,6 @@ export declare const generateImageLimit: (req: Request, _res: Response, next: Ne
 export declare const generalLimit: (req: Request, _res: Response, next: NextFunction) => Promise<void>;
 export declare const adminLimit: (req: Request, _res: Response, next: NextFunction) => Promise<void>;
 export declare const trackingLimit: (req: Request, _res: Response, next: NextFunction) => Promise<void>;
+export declare const loginLimit: (req: Request, _res: Response, next: NextFunction) => Promise<void>;
 export {};
 //# sourceMappingURL=rateLimit.d.ts.map

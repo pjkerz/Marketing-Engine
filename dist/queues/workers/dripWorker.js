@@ -9,11 +9,10 @@ const logger_1 = require("../../lib/logger");
 const env_1 = require("../../config/env");
 const resendClient_1 = require("../../modules/email/resendClient");
 const spamEngine_1 = require("../../modules/email/spamEngine");
-const BASE_URL = 'https://alphaboost.ngrok.app';
 const UNSUB_SECRET = env_1.env.SESSION_STITCH_SECRET ?? 'unsub-secret-change-me';
-function injectUnsubscribeLink(html, subscriberId) {
+function injectUnsubscribeLink(html, subscriberId, appUrl) {
     const token = (0, spamEngine_1.generateUnsubToken)(subscriberId, UNSUB_SECRET);
-    const unsubUrl = `${BASE_URL}/v2/api/email/unsubscribe?sid=${subscriberId}&token=${token}`;
+    const unsubUrl = `${appUrl}/v2/api/email/unsubscribe?sid=${subscriberId}&token=${token}`;
     const link = `<p style="text-align:center;font-size:11px;color:#94a3b8;margin-top:32px">
     <a href="${unsubUrl}" style="color:#94a3b8">Unsubscribe</a>
   </p>`;
@@ -77,10 +76,13 @@ async function runDripCheck() {
                     }
                     // Send this step
                     try {
+                        const bizConfig = await prisma.businessConfig.findUnique({ where: { businessId: seq.businessId }, select: { landingPageUrl: true, fromName: true, fromEmail: true } });
+                        const appUrl = bizConfig?.landingPageUrl ?? env_1.env.APP_URL;
+                        const fromAddress = bizConfig?.fromEmail && bizConfig?.fromName ? `${bizConfig.fromName} <${bizConfig.fromEmail}>` : env_1.env.EMAIL_FROM;
                         let html = step.html;
-                        html = injectUnsubscribeLink(html, sub.id);
+                        html = injectUnsubscribeLink(html, sub.id, appUrl);
                         const result = await (0, resendClient_1.sendEmail)({
-                            from: env_1.env.EMAIL_FROM,
+                            from: fromAddress,
                             to: [sub.email],
                             subject: step.subject,
                             html,

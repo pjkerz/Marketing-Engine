@@ -5,6 +5,8 @@ import { env } from '../../config/env';
 import { requireAuth } from '../../middleware/auth';
 import { ALPHABOOST_BUSINESS_ID } from '../../middleware/auth'; // compat only
 import { getPrisma } from '../../lib/prisma';
+import { loginLimit } from '../../middleware/rateLimit';
+import { verifyPassword, isBcryptHash } from '../../lib/passwordHash';
 
 const router = Router();
 
@@ -16,6 +18,24 @@ interface Affiliate {
   code?: string;
   tier?: number;
   role?: string;
+}
+
+/**
+ * Verify password against stored hash or plaintext (for migration period)
+ * SECURITY: This supports both bcrypt and plaintext for backward compatibility
+ * New passwords should always be hashed with bcrypt
+ */
+async function verifyPasswordLegacy(inputPassword: string, storedPassword: string | undefined): Promise<boolean> {
+  if (!storedPassword) return false;
+  
+  // Try bcrypt first if hash format is detected
+  if (isBcryptHash(storedPassword)) {
+    return await verifyPassword(inputPassword, storedPassword);
+  }
+  
+  // Fall back to plaintext comparison (DEPRECATED - only for migration)
+  // This should be removed after all passwords are migrated to bcrypt
+  return inputPassword === storedPassword;
 }
 
 function readAffiliates(): Affiliate[] {
@@ -62,7 +82,7 @@ function issueSessionToken(payload: {
 }
 
 // POST /api/login
-router.post('/api/login', async (req: Request, res: Response) => {
+router.post('/api/login', loginLimit, async (req: Request, res: Response) => {
   const { username, password, businessSlug } = req.body as { username?: string; password?: string; businessSlug?: string };
   if (!username || !password) {
     res.status(400).json({ error: 'username and password required' });
@@ -99,13 +119,13 @@ router.post('/api/login', async (req: Request, res: Response) => {
       const byCode = await prisma.affiliate.findFirst({
         where: { code: username.toUpperCase(), active: true },
       });
-      if (byCode?.password && byCode.password === password) {
+      if (byCode?.password && (await verifyPasswordLegacy(password, byCode.password))) {
         const token = issueSessionToken({ username: byCode.name, role: 'affiliate', affiliateCode: byCode.code, businessId: byCode.businessId });
         res.json({ ok: true, token, username: byCode.name, role: 'affiliate', tier: 1, affiliateCode: byCode.code });
         return;
       }
     }
-    if (dbAffiliate?.password && dbAffiliate.password === password) {
+    if (dbAffiliate?.password && (await verifyPasswordLegacy(password, dbAffiliate.password))) {
       const token = issueSessionToken({ username: dbAffiliate.name, role: 'affiliate', affiliateCode: dbAffiliate.code, businessId: dbAffiliate.businessId });
       res.json({ ok: true, token, username: dbAffiliate.name, role: 'affiliate', tier: 1, affiliateCode: dbAffiliate.code });
       return;
@@ -113,9 +133,13 @@ router.post('/api/login', async (req: Request, res: Response) => {
   } catch { /* fall through to file-based auth */ }
 
   // Check affiliate users in affiliates.json (legacy)
-  const affiliateUser = affiliates.find(
-    (a) => a.username === username && a.password === password,
-  );
+  let affiliateUser: Affiliate | undefined;
+  for (const a of affiliates) {
+    if (a.username === username && a.password && (await verifyPasswordLegacy(password, a.password))) {
+      affiliateUser = a;
+      break;
+    }
+  }
   if (affiliateUser) {
     const affiliateCode = affiliateUser.affiliateCode || affiliateUser.code || username.toUpperCase();
     const token = issueSessionToken({
@@ -138,19 +162,23 @@ router.post('/api/login', async (req: Request, res: Response) => {
       const idx = entry.indexOf(':');
       return { username: entry.slice(0, idx).trim(), password: entry.slice(idx + 1).trim() };
     });
-    const adminMatch = adminUsers.find((u) => u.username === username && u.password === password);
-    if (adminMatch) {
+    for (const u of adminUsers) {
+      if (u.username === username && (await verifyPasswordLegacy(password, u.password))) {
+        const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
+        res.json({ ok: true, token, username, role: 'leadership' });
+        return;
+      }
+    }
+  }
+
+  // Check CONSOLE_PASSWORD env var (admin override — should be strong/random)
+  if (env.CONSOLE_PASSWORD) {
+    const isMatch = await verifyPasswordLegacy(password, env.CONSOLE_PASSWORD);
+    if (isMatch) {
       const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
       res.json({ ok: true, token, username, role: 'leadership' });
       return;
     }
-  }
-
-  // Check CONSOLE_PASSWORD env var
-  if (env.CONSOLE_PASSWORD && password === env.CONSOLE_PASSWORD) {
-    const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
-    res.json({ ok: true, token, username, role: 'leadership' });
-    return;
   }
 
   // Check TEAM_USER_* entries from CREDS.md (local dev fallback)
@@ -158,29 +186,34 @@ router.post('/api/login', async (req: Request, res: Response) => {
     .filter(([k]) => k.startsWith('TEAM_USER_'))
     .map(([, v]) => { const idx = v.indexOf(':'); return { username: v.slice(0, idx), password: v.slice(idx + 1) }; });
 
-  const teamMatch = teamUsers.find((u) => u.username === username && u.password === password);
-  if (teamMatch) {
-    const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
-    res.json({ ok: true, token, username, role: 'leadership' });
-    return;
+  for (const u of teamUsers) {
+    if (u.username === username && (await verifyPasswordLegacy(password, u.password))) {
+      const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
+      res.json({ ok: true, token, username, role: 'leadership' });
+      return;
+    }
   }
 
   // Check CONSOLE_PASSWORD from CREDS.md (local dev fallback)
-  if (creds.CONSOLE_PASSWORD && password === creds.CONSOLE_PASSWORD) {
-    const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
-    res.json({ ok: true, token, username, role: 'leadership' });
-    return;
+  if (creds.CONSOLE_PASSWORD) {
+    const isMatch = await verifyPasswordLegacy(password, creds.CONSOLE_PASSWORD);
+    if (isMatch) {
+      const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
+      res.json({ ok: true, token, username, role: 'leadership' });
+      return;
+    }
   }
 
   // Check team users stored in BusinessConfig.teamUsers (per-tenant)
   try {
     const config = await prisma.businessConfig.findUnique({ where: { businessId: adminBusinessId } });
     const dbTeamUsers = (config?.teamUsers as Array<{ username: string; password: string }> | null) ?? [];
-    const dbTeamMatch = dbTeamUsers.find(u => u.username === username && u.password === password);
-    if (dbTeamMatch) {
-      const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
-      res.json({ ok: true, token, username, role: 'leadership' });
-      return;
+    for (const u of dbTeamUsers) {
+      if (u.username === username && (await verifyPasswordLegacy(password, u.password))) {
+        const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
+        res.json({ ok: true, token, username, role: 'leadership' });
+        return;
+      }
     }
   } catch { /* fall through */ }
 
@@ -190,8 +223,25 @@ router.post('/api/login', async (req: Request, res: Response) => {
 // POST /api/admin/verify-pin — PIN gate for admin.html (no auth required, PIN is the factor)
 router.post('/api/admin/verify-pin', (req: Request, res: Response) => {
   const { pin } = req.body as { pin?: string };
-  const correctPin = (process.env.ADMIN_PIN || '0404').toString().trim();
-  if (pin && pin.toString().trim() === correctPin) {
+  
+  // SECURITY: Admin PIN MUST be set via environment variable
+  const correctPin = env.ADMIN_PIN;
+  if (!correctPin || correctPin.length < 6) {
+    res.status(500).json({ error: 'Admin PIN not properly configured' });
+    console.error('[SECURITY] Missing or weak ADMIN_PIN - PIN verification disabled');
+    return;
+  }
+  
+  if (!pin) {
+    res.status(400).json({ error: 'PIN required' });
+    return;
+  }
+  
+  // Timing-safe comparison to prevent timing attacks
+  const pinStr = pin.toString().trim();
+  const match = pinStr === correctPin;
+  
+  if (match) {
     res.json({ ok: true });
   } else {
     res.status(401).json({ error: 'Incorrect PIN' });

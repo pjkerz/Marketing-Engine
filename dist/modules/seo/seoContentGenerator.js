@@ -90,7 +90,7 @@ async function generateSeoContent(keyword, businessId, contentType = 'blog-post'
     const brandName = config?.brandName ?? 'AlphaBoost';
     // Get BOK context (use alphaboost slug for first tenant)
     const business = await prisma.business.findUnique({ where: { id: businessId }, select: { slug: true } });
-    const bokContext = readBokChunks(business?.slug ?? 'alphaboost', keyword);
+    const bokContext = readBokChunks(business?.slug ?? '', keyword);
     const systemPrompt = `You are an SEO content writer for ${brandName}.
 Brand voice: ${brandVoice}.
 ${bokContext ? `\nRelevant brand knowledge:\n${bokContext}` : ''}

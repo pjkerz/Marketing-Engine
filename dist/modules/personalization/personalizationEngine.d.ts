@@ -1,12 +1,12 @@
 import { AffiliateProfile } from '@prisma/client';
 export declare function getOptimisationRules(businessId: string): Promise<{
-    businessId: string;
     id: string;
     active: boolean;
     createdAt: Date;
     updatedAt: Date;
-    ruleType: string;
     config: import("@prisma/client/runtime/library").JsonValue;
+    businessId: string;
+    ruleType: string;
     createdFrom: string | null;
 }[]>;
 export declare function weightedRandom(weights: Record<string, number>): string;
@@ -21,6 +21,7 @@ export interface PersonalizationInput {
     channel: string;
     affiliateCode: string;
     profile: AffiliateProfile;
+    tenantLandingUrl: string;
 }
 export declare function personalize(input: PersonalizationInput): string;
 //# sourceMappingURL=personalizationEngine.d.ts.map

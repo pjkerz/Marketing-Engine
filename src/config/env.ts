@@ -54,6 +54,9 @@ const EnvSchema = z.object({
   // Comma-separated admin credentials: "user1:pass1,user2:pass2"
   ADMIN_USERS: z.string().optional(),
   CONSOLE_PASSWORD: z.string().optional(),
+  
+  // SECURITY: Admin PIN for /api/admin/verify-pin endpoint (must be 6+ digits)
+  ADMIN_PIN: z.string().min(6, 'ADMIN_PIN must be at least 6 characters').optional(),
 
   // Make.com webhook — fires when content is approved for Sendible
   MAKE_WEBHOOK_URL: z.string().url().optional(),

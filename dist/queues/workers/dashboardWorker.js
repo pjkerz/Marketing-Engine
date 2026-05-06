@@ -6,13 +6,13 @@ exports.detectAnomalies = detectAnomalies;
 exports.startDashboardWorker = startDashboardWorker;
 exports.stopDashboardWorker = stopDashboardWorker;
 const bullmq_1 = require("bullmq");
-const redis_js_1 = require("../../lib/redis.js");
-const prisma_js_1 = require("../../lib/prisma.js");
+const redis_1 = require("../../lib/redis");
+const prisma_1 = require("../../lib/prisma");
 const QUEUE_NAME = 'v2-dashboard';
 let worker = null;
 exports.dashboardQueue = null;
 async function computeDashboardData(businessId, days = 30) {
-    const prisma = (0, prisma_js_1.getPrisma)();
+    const prisma = (0, prisma_1.getPrisma)();
     const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const prevSince = new Date(Date.now() - 2 * days * 24 * 60 * 60 * 1000);
     const [funnelCounts, prevFunnelCounts, channelClicks, channelConvs, affiliateClicks, affiliateConvs, contentClicks, insights, activeTests] = await Promise.all([
@@ -82,7 +82,7 @@ async function computeDashboardData(businessId, days = 30) {
     return { funnelSummary, overallCvr, channelPerformance, affiliateLeaderboard, topContent, insights, activeTests, generatedAt: new Date().toISOString(), days };
 }
 async function detectAnomalies(businessId, context) {
-    const prisma = (0, prisma_js_1.getPrisma)();
+    const prisma = (0, prisma_1.getPrisma)();
     const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
     const events = [];
     const [top, second] = context.channelPerformance;
@@ -104,7 +104,7 @@ async function detectAnomalies(businessId, context) {
     }
 }
 async function runDashboardSnapshot() {
-    const prisma = (0, prisma_js_1.getPrisma)();
+    const prisma = (0, prisma_1.getPrisma)();
     const businesses = await prisma.business.findMany({ where: { active: true } });
     for (const biz of businesses) {
         try {
@@ -121,7 +121,7 @@ async function runDashboardSnapshot() {
     }
 }
 function startDashboardWorker() {
-    const connection = (0, redis_js_1.getBullRedis)();
+    const connection = (0, redis_1.getBullRedis)();
     exports.dashboardQueue = new bullmq_1.Queue(QUEUE_NAME, { connection });
     exports.dashboardQueue.add('snapshot', {}, { repeat: { every: 60 * 60 * 1000 }, jobId: 'dashboard-snapshot-repeat' });
     worker = new bullmq_1.Worker(QUEUE_NAME, async (_job) => { await runDashboardSnapshot(); }, { connection, concurrency: 1 });

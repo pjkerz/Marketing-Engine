@@ -1,4 +1,4 @@
-import { getPrisma } from '../../lib/prisma.js'
+import { getPrisma } from '../../lib/prisma'
 
 export interface IntelligenceContext {
   businessId: string

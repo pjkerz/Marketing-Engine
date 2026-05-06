@@ -1,5 +1,5 @@
-import { getPrisma } from '../../lib/prisma.js'
-import { env } from '../../config/env.js'
+import { getPrisma } from '../../lib/prisma'
+import { env } from '../../config/env'
 
 interface ExecutionResult {
   channel: string

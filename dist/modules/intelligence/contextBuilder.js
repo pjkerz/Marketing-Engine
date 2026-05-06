@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.buildBusinessContext = buildBusinessContext;
-const prisma_js_1 = require("../../lib/prisma.js");
+const prisma_1 = require("../../lib/prisma");
 async function buildBusinessContext(businessId) {
-    const prisma = (0, prisma_js_1.getPrisma)();
+    const prisma = (0, prisma_1.getPrisma)();
     const since30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const results = await Promise.allSettled([
         /* 0 */ prisma.business.findUnique({ where: { id: businessId }, include: { config: true } }),

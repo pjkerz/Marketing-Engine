@@ -165,6 +165,19 @@ router.post('/api/login', async (req, res) => {
         res.json({ ok: true, token, username, role: 'leadership' });
         return;
     }
+    // Check team users stored in BusinessConfig.teamUsers
+    try {
+        const prisma = (0, prisma_1.getPrisma)();
+        const config = await prisma.businessConfig.findUnique({ where: { businessId: auth_2.ALPHABOOST_BUSINESS_ID } });
+        const teamUsers = config?.teamUsers ?? [];
+        const teamMatch = teamUsers.find(u => u.username === username && u.password === password);
+        if (teamMatch) {
+            const token = issueSessionToken({ username, role: 'admin' });
+            res.json({ ok: true, token, username, role: 'leadership' });
+            return;
+        }
+    }
+    catch { /* fall through */ }
     res.status(401).json({ error: 'Invalid username or password' });
 });
 // POST /api/admin/verify-pin — PIN gate for admin.html (no auth required, PIN is the factor)
@@ -195,9 +208,29 @@ router.get('/api/me', auth_1.requireAuth, (req, res) => {
         tier: aff?.tier || (actor.role === 'admin' ? null : 1),
     });
 });
-// GET /api/my/connected-platforms — stub for affiliate.html
-router.get('/api/my/connected-platforms', auth_1.requireAuth, (_req, res) => {
-    res.json({ platforms: [] });
+// GET /api/my/connected-platforms — returns platforms with active DB connections
+router.get('/api/my/connected-platforms', auth_1.requireAuth, async (req, res) => {
+    try {
+        const actor = req.actor;
+        if (!actor?.affiliateCode) {
+            res.json({ platforms: [] });
+            return;
+        }
+        const prisma = (0, prisma_1.getPrisma)();
+        const affiliate = await prisma.affiliate.findUnique({ where: { code: actor.affiliateCode } });
+        if (!affiliate) {
+            res.json({ platforms: [] });
+            return;
+        }
+        const connections = await prisma.platformConnection.findMany({
+            where: { affiliateId: affiliate.id },
+            select: { platform: true, connectedAt: true },
+        });
+        res.json({ platforms: connections.map(c => ({ id: c.platform, connectedAt: c.connectedAt })) });
+    }
+    catch {
+        res.json({ platforms: [] });
+    }
 });
 // GET /api/welcome — stub for affiliate.html
 router.get('/api/welcome', auth_1.requireAuth, (_req, res) => {

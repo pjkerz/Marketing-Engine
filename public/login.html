@@ -63,7 +63,7 @@ const t = localStorage.getItem('v2_affiliate_token');
 if (t) {
   fetch('/api/me', { headers: { Authorization: 'Bearer ' + t } })
     .then(r => r.json())
-    .then(d => { if (d.username) window.location.href = d.role === 'affiliate' ? '/affiliate' : '/app'; })
+    .then(d => { if (d.username) window.location.href = '/admin'; })
     .catch(() => {});
 }
 
@@ -91,7 +91,7 @@ async function login() {
     localStorage.setItem('vc_username', d.username);
     localStorage.setItem('vc_role', d.role);
     if (d.affiliateCode) localStorage.setItem('affiliateCode', d.affiliateCode);
-    window.location.href = d.role === 'affiliate' ? '/affiliate' : '/admin';
+    window.location.href = '/admin';
   } catch { e.textContent = 'Connection error. Please try again.'; }
 }
 </script>

@@ -70,7 +70,10 @@ const dashboardRoutes_1 = __importDefault(require("./modules/dashboard/dashboard
 const intelligenceRoutes_1 = __importDefault(require("./modules/intelligence/intelligenceRoutes"));
 const compatRoutes_1 = __importDefault(require("./modules/compat/compatRoutes"));
 const gscRoutes_1 = __importDefault(require("./modules/gsc/gscRoutes"));
+const oauthRoutes_1 = __importDefault(require("./modules/oauth/oauthRoutes"));
+const leadsRoutes_1 = __importDefault(require("./modules/leads/leadsRoutes"));
 const dashboardWorker_1 = require("./queues/workers/dashboardWorker");
+const leadPullWorker_1 = require("./queues/workers/leadPullWorker");
 const redis_1 = require("./lib/redis");
 const prisma_1 = require("./lib/prisma");
 const queues_1 = require("./queues");
@@ -118,10 +121,13 @@ app.use('/v2/api/admin/keywords', keywordRoutes_1.default);
 app.use('/v2/api/admin/llm-presence', llmPresenceRoutes_1.default);
 app.use('/v2/api/admin/dashboard', dashboardRoutes_1.default);
 app.use('/v2/api/admin/intelligence', intelligenceRoutes_1.default);
+app.use('/v2/api/admin/leads', leadsRoutes_1.default);
 // Legacy /api/* compat bridge (admin.html v1 paths → v2 implementations)
 app.use('/', compatRoutes_1.default);
 // Google Search Console OAuth + data routes
 app.use('/', gscRoutes_1.default);
+// Social platform OAuth (LinkedIn, Facebook, Twitter, YouTube, Reddit)
+app.use('/', oauthRoutes_1.default);
 // Static frontend files
 const PUBLIC_DIR = path.join(__dirname, '../public');
 app.use(express_1.default.static(PUBLIC_DIR));
@@ -164,6 +170,7 @@ function startWorkers() {
     (0, seoAuditWorker_1.startSeoAuditWorker)();
     (0, llmPresenceWorker_1.startLlmPresenceWorker)();
     (0, dashboardWorker_1.startDashboardWorker)();
+    (0, leadPullWorker_1.startLeadPullWorker)();
     logger_1.logger.info({ module: 'index' }, 'All workers started');
 }
 // Graceful shutdown
@@ -183,6 +190,7 @@ async function shutdown(signal) {
         (0, seoAuditWorker_1.stopSeoAuditWorker)(),
         (0, llmPresenceWorker_1.stopLlmPresenceWorker)(),
         (0, dashboardWorker_1.stopDashboardWorker)(),
+        (0, leadPullWorker_1.stopLeadPullWorker)(),
     ]);
     await (0, queues_1.closeQueues)();
     await (0, redis_1.closeRedis)();

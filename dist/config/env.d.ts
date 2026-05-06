@@ -29,5 +29,15 @@ export declare const env: {
     SESSION_STITCH_SECRET?: string | undefined;
     GOOGLE_CLIENT_ID?: string | undefined;
     GOOGLE_CLIENT_SECRET?: string | undefined;
+    LI_CLIENT_ID?: string | undefined;
+    LI_CLIENT_SECRET?: string | undefined;
+    FB_APP_ID?: string | undefined;
+    FB_APP_SECRET?: string | undefined;
+    X_CLIENT_ID?: string | undefined;
+    X_CLIENT_SECRET?: string | undefined;
+    REDDIT_CLIENT_ID?: string | undefined;
+    REDDIT_CLIENT_SECRET?: string | undefined;
+    OAUTH_TOKEN_SECRET?: string | undefined;
+    APOLLO_API_KEY?: string | undefined;
 };
 //# sourceMappingURL=env.d.ts.map

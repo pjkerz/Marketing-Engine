@@ -421,5 +421,105 @@ router.get('/api/bok/download', auth_1.requireAuth, (_req, res) => {
         res.status(404).json({ error: 'BOK file not found' });
     }
 });
+async function getTeamUsers(businessId) {
+    const prisma = (0, prisma_1.getPrisma)();
+    const config = await prisma.businessConfig.findUnique({ where: { businessId } });
+    return config?.teamUsers ?? [];
+}
+async function saveTeamUsers(businessId, users) {
+    const prisma = (0, prisma_1.getPrisma)();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const json = JSON.parse(JSON.stringify(users));
+    await prisma.businessConfig.upsert({
+        where: { businessId },
+        update: { teamUsers: json },
+        create: { businessId, teamUsers: json },
+    });
+}
+router.get('/api/team/passwords', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+        const users = await getTeamUsers(req.actor.businessId || auth_2.ALPHABOOST_BUSINESS_ID);
+        res.json(users);
+    }
+    catch (err) {
+        next(err);
+    }
+});
+router.post('/api/team', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+        const { username, password } = req.body;
+        if (!username || !password) {
+            res.status(400).json({ error: 'username and password required' });
+            return;
+        }
+        const businessId = req.actor.businessId || auth_2.ALPHABOOST_BUSINESS_ID;
+        const users = await getTeamUsers(businessId);
+        if (users.find(u => u.username.toLowerCase() === username.toLowerCase())) {
+            res.status(409).json({ error: 'Username already exists' });
+            return;
+        }
+        users.push({ username, password });
+        await saveTeamUsers(businessId, users);
+        res.json({ ok: true });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+router.delete('/api/team/:username', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+        const { username } = req.params;
+        const businessId = req.actor.businessId || auth_2.ALPHABOOST_BUSINESS_ID;
+        const users = await getTeamUsers(businessId);
+        const filtered = users.filter(u => u.username !== username);
+        await saveTeamUsers(businessId, filtered);
+        res.json({ ok: true });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+router.patch('/api/team/:username/email', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+        const { username } = req.params;
+        const { email } = req.body;
+        const businessId = req.actor.businessId || auth_2.ALPHABOOST_BUSINESS_ID;
+        const users = await getTeamUsers(businessId);
+        const user = users.find(u => u.username === username);
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+        user.email = email || '';
+        await saveTeamUsers(businessId, users);
+        res.json({ ok: true });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+router.patch('/api/team/:username/password', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+        const { username } = req.params;
+        const { password } = req.body;
+        if (!password) {
+            res.status(400).json({ error: 'password required' });
+            return;
+        }
+        const businessId = req.actor.businessId || auth_2.ALPHABOOST_BUSINESS_ID;
+        const users = await getTeamUsers(businessId);
+        const user = users.find(u => u.username === username);
+        if (!user) {
+            res.status(404).json({ error: 'User not found' });
+            return;
+        }
+        user.password = password;
+        await saveTeamUsers(businessId, users);
+        res.json({ ok: true });
+    }
+    catch (err) {
+        next(err);
+    }
+});
 exports.default = router;
 //# sourceMappingURL=compatRoutes.js.map

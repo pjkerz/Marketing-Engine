@@ -441,76 +441,76 @@ nav { flex: 1; padding: 0 10px; }
   </div>
 
   <nav>
-    <button class="nav-item active" onclick="showPage('dashboard')">
+    <button class="nav-item active" data-roles="admin affiliate" onclick="showPage('dashboard')">
       <span class="nav-icon">📊</span> Dashboard
     </button>
-    <button class="nav-item" onclick="showPage('intelligence')">
+    <button class="nav-item" data-roles="admin affiliate" onclick="showPage('intelligence')">
       <span class="nav-icon">🧠</span> Intelligence
     </button>
-    <button class="nav-item" onclick="showPage('affiliates')">
+    <button class="nav-item" data-roles="admin" onclick="showPage('affiliates')">
       <span class="nav-icon">👥</span> Affiliates
     </button>
-    <button class="nav-item" onclick="showPage('commissions')">
+    <button class="nav-item" data-roles="affiliate" onclick="showPage('commissions')">
       <span class="nav-icon">💰</span> Commissions
     </button>
-    <button class="nav-item" onclick="showPage('postlog')">
+    <button class="nav-item" data-roles="admin affiliate" onclick="showPage('postlog')">
       <span class="nav-icon">📋</span> Post Log
     </button>
-    <button class="nav-item" onclick="showPage('pipeline')">
+    <button class="nav-item" data-roles="admin affiliate" onclick="showPage('pipeline')">
       <span class="nav-icon">⚡</span> Pipeline
     </button>
-    <button class="nav-item" onclick="showPage('creds')">
+    <button class="nav-item" data-roles="admin" onclick="showPage('creds')">
       <span class="nav-icon">🔑</span> API Keys
     </button>
-    <button class="nav-item" onclick="showPage('team')">
+    <button class="nav-item" data-roles="admin" onclick="showPage('team')">
       <span class="nav-icon">🔐</span> Team Logins
     </button>
-    <button class="nav-item" onclick="showPage('leads')">
+    <button class="nav-item" data-roles="admin" onclick="showPage('leads')">
       <span class="nav-icon">🎯</span> Lead Pipeline
     </button>
-    <button class="nav-item" onclick="showPage('bok')">
+    <button class="nav-item" data-roles="admin" onclick="showPage('bok')">
       <span class="nav-icon">🎙️</span> AI Knowledge
     </button>
-    <button class="nav-item" onclick="showPage('conversions')">
+    <button class="nav-item" data-roles="admin" onclick="showPage('conversions')">
       <span class="nav-icon">📈</span> Conversions
     </button>
-    <button class="nav-item" onclick="showPage('email')">
+    <button class="nav-item" data-roles="admin affiliate" onclick="showPage('email')">
       <span class="nav-icon">✉️</span> Email Marketing
     </button>
-    <button class="nav-item" onclick="showPage('seo')">
+    <button class="nav-item" data-roles="admin" onclick="showPage('seo')">
       <span class="nav-icon">🔍</span> SEO Intelligence
     </button>
-    <button class="nav-item" onclick="showPage('keywords')">
+    <button class="nav-item" data-roles="admin" onclick="showPage('keywords')">
       <span class="nav-icon">🎯</span> Keywords
     </button>
-    <button class="nav-item" onclick="showPage('llm-presence')">
+    <button class="nav-item" data-roles="admin" onclick="showPage('llm-presence')">
       <span class="nav-icon">🤖</span> LLM Presence
     </button>
-    <button class="nav-item" onclick="showPage('gsc')">
+    <button class="nav-item" data-roles="admin" onclick="showPage('gsc')">
       <span class="nav-icon">📊</span> Search Console
     </button>
-    <button class="nav-item" onclick="showPage('optimisation')">
+    <button class="nav-item" data-roles="admin" onclick="showPage('optimisation')">
       <span class="nav-icon">⚡</span> Optimisation
     </button>
-    <button class="nav-item" onclick="showPage('content-studio')">
+    <button class="nav-item" data-roles="admin affiliate" onclick="showPage('content-studio')">
       <span class="nav-icon">🎨</span> Content Studio
     </button>
-    <button class="nav-item" onclick="showPage('export')">
+    <button class="nav-item" data-roles="admin affiliate" onclick="showPage('export')">
       <span class="nav-icon">⬇</span> Export
     </button>
-    <button class="nav-item" onclick="showPage('syncapi')">
+    <button class="nav-item" data-roles="admin" onclick="showPage('syncapi')">
       <span class="nav-icon">🔗</span> Sync API
     </button>
-    <button class="nav-item" onclick="window.open('/adhoc','_blank')">
+    <button class="nav-item" data-roles="affiliate" onclick="window.open('/adhoc','_blank')">
       <span class="nav-icon">✦</span> Ad-Hoc Generator
     </button>
-    <button class="nav-item" onclick="showPage('calculator')">
+    <button class="nav-item" data-roles="admin affiliate" onclick="showPage('calculator')">
       <span class="nav-icon">📊</span> Earnings Calc
     </button>
-    <button class="nav-item" onclick="showPage('terms')">
+    <button class="nav-item" data-roles="admin affiliate" onclick="showPage('terms')">
       <span class="nav-icon">📄</span> Terms & Conditions
     </button>
-    <button class="nav-item" onclick="showPage('welcome')">
+    <button class="nav-item" data-roles="admin affiliate" onclick="showPage('welcome')">
       <span class="nav-icon">🏠</span> Welcome Tab
     </button>
   </nav>
@@ -2405,6 +2405,7 @@ const TOKEN = localStorage.getItem('vc_token');
 if (!TOKEN) { window.location.href = '/'; }
 
 const BASE = '';
+document.getElementById('pin-gate').style.display = 'none';
 
 // ── PIN Gate ──────────────────────────────────────────────────────────────────
 (function() {
@@ -2473,6 +2474,32 @@ const BASE = '';
     else if (e.key === 'Backspace') window.pinBack();
     else if (e.key === 'Escape') window.pinClear();
   });
+})();
+
+// ── Role-based navigation ─────────────────────────────────────────────────────
+let APP_ROLE = null;
+(async function initRole() {
+  try {
+    const r = await fetch('/api/me', { headers: { Authorization: 'Bearer ' + TOKEN } });
+    if (!r.ok) { window.location.href = '/'; return; }
+    const me = await r.json();
+    APP_ROLE = me.role === 'leadership' ? 'admin' : 'affiliate';
+  } catch {
+    window.location.href = '/';
+    return;
+  }
+  document.querySelectorAll('.nav-item[data-roles]').forEach(btn => {
+    if (!btn.dataset.roles.split(' ').includes(APP_ROLE)) btn.style.display = 'none';
+  });
+  if (APP_ROLE === 'admin') {
+    if (sessionStorage.getItem('admin_pin_ok') !== '1') {
+      document.getElementById('pin-gate').style.display = '';
+    }
+  } else {
+    sessionStorage.setItem('admin_pin_ok', '1');
+    const first = document.querySelector('.nav-item[data-roles~="affiliate"]');
+    if (first) first.click();
+  }
 })();
 
 // ── Password toggle ───────────────────────────────────────────────────────────

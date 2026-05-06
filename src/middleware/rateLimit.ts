@@ -65,14 +65,3 @@ export const trackingLimit = rateLimit({
   windowSeconds: 60,
   keyFn: (req) => `track:ip:${req.ip}`,
 });
-
-// SECURITY: Strict login rate limiting — 3 attempts per 5 minutes per IP
-// Prevents brute-force and credential enumeration attacks
-export const loginLimit = rateLimit({
-  max: 3,
-  windowSeconds: 300,
-  keyFn: (req) => {
-    const username = (req.body as any)?.username || 'unknown';
-    return `login:${username}:${req.ip}`;
-  },
-});

@@ -91,6 +91,30 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction): v
     }
   }
 
+  // Try admin session: X-Admin-Password + X-Business-Slug headers
+  const adminPassword = req.headers['x-admin-password'] as string | undefined;
+  if (adminPassword) {
+    const leadershipPassword = readLeadershipPassword();
+    if (leadershipPassword && adminPassword === leadershipPassword) {
+      const slug = req.headers['x-business-slug'] as string | undefined;
+      if (slug) {
+        resolveBusinessIdFromSlug(slug).then((businessId) => {
+          if (!businessId) {
+            next(new AppError('UNAUTHORIZED', `Unknown business slug: ${slug}`, 401));
+            return;
+          }
+          req.actor = { role: 'admin', businessId };
+          next();
+        }).catch(() => next(new AppError('UNAUTHORIZED', 'Failed to resolve tenant.', 401)));
+        return;
+      }
+      // No slug provided — fall back to alphaboost for backward compat with admin.html v1
+      req.actor = { role: 'admin', businessId: ALPHABOOST_BUSINESS_ID };
+      next();
+      return;
+    }
+  }
+
   next(new AppError('UNAUTHORIZED', 'Authentication required.', 401));
 }
 

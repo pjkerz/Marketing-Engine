@@ -22,7 +22,6 @@ export declare const env: {
     APP_URL: string;
     ADMIN_USERS?: string | undefined;
     CONSOLE_PASSWORD?: string | undefined;
-    ADMIN_PIN?: string | undefined;
     MAKE_WEBHOOK_URL?: string | undefined;
     RESEND_API_KEY?: string | undefined;
     RESEND_WEBHOOK_SECRET?: string | undefined;

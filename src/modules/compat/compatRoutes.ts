@@ -398,59 +398,19 @@ interface TeamUser { username: string; password: string; email?: string; }
 
 async function getTeamUsers(businessId: string): Promise<TeamUser[]> {
   const prisma = getPrisma();
-  try {
-    const config = await prisma.businessConfig.findUnique({ where: { businessId } });
-    if (!config?.teamUsers) return [];
-    
-    // Ensure teamUsers is parsed as array (in case it was stored as string)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let users: any = config.teamUsers;
-    if (typeof users === 'string') {
-      try {
-        users = JSON.parse(users);
-      } catch {
-        return [];
-      }
-    }
-    return Array.isArray(users) ? users : [];
-  } catch (err: unknown) {
-    // Handle P2022: missing gscTokens column (database schema out of date)
-    // This is a temporary defensive measure until Prisma migration is applied in production
-    const isSchemaError = err instanceof Error && 
-                         err.message?.includes('gscTokens') && 
-                         (err as any).code === 'P2022';
-    if (isSchemaError) {
-      console.warn('[getTeamUsers] database schema missing gscTokens column — returning empty, migration needed');
-      return [];
-    }
-    // Re-throw other errors
-    throw err;
-  }
+  const config = await prisma.businessConfig.findUnique({ where: { businessId } });
+  return (config?.teamUsers as TeamUser[] | null) ?? [];
 }
 
 async function saveTeamUsers(businessId: string, users: TeamUser[]): Promise<void> {
   const prisma = getPrisma();
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const json = JSON.parse(JSON.stringify(users)) as any;
-    await prisma.businessConfig.upsert({
-      where: { businessId },
-      update: { teamUsers: json },
-      create: { businessId, teamUsers: json },
-    });
-  } catch (err: unknown) {
-    // Handle P2022: missing gscTokens column (database schema out of date)
-    // This is a temporary defensive measure until Prisma migration is applied in production
-    const isSchemaError = err instanceof Error && 
-                         err.message?.includes('gscTokens') && 
-                         (err as any).code === 'P2022';
-    if (isSchemaError) {
-      console.warn('[saveTeamUsers] database schema missing gscTokens column — save failed, migration needed');
-      throw new Error('Database schema out of date. Team user save temporarily unavailable. Please apply Prisma migrations.');
-    }
-    // Re-throw other errors
-    throw err;
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const json = JSON.parse(JSON.stringify(users)) as any;
+  await prisma.businessConfig.upsert({
+    where: { businessId },
+    update: { teamUsers: json },
+    create: { businessId, teamUsers: json },
+  });
 }
 
 router.get('/api/team/passwords', requireAuth, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
@@ -511,118 +471,6 @@ router.patch('/api/team/:username/password', requireAuth, requireAdmin, async (r
     if (!user) { res.status(404).json({ error: 'User not found' }); return; }
     user.password = password;
     await saveTeamUsers(businessId, users);
-    res.json({ ok: true });
-  } catch (err) { next(err); }
-});
-
-// ── /api/affiliates — Legacy affiliate management routes ──────────────────────
-
-// GET /api/affiliates
-router.get('/api/affiliates', requireAuth, requireAdmin, async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const prisma = getPrisma();
-    const affiliates = await prisma.affiliate.findMany({
-      where: { businessId: ALPHABOOST_BUSINESS_ID },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        code: true,
-        name: true,
-        email: true,
-        active: true,
-        createdAt: true,
-        profile: { orderBy: { version: 'desc' }, take: 1, select: { version: true } },
-      },
-    });
-    res.json({ ok: true, affiliates });
-  } catch (err) { next(err); }
-});
-
-// POST /api/affiliates
-router.post('/api/affiliates', requireAuth, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const body = req.body as { code?: string; name?: string; email?: string; password?: string; affiliateCode?: string };
-    const code = (body.affiliateCode || body.code || '').toUpperCase().trim();
-    const name = (body.name || '').trim();
-    const email = (body.email || '').trim();
-    
-    if (!code || !name || !email) {
-      res.status(422).json({ error: { message: 'Code, name, and email are required' } });
-      return;
-    }
-
-    const prisma = getPrisma();
-    const existing = await prisma.affiliate.findUnique({ where: { code } });
-    if (existing) {
-      res.status(409).json({ error: { message: 'Affiliate code already exists' } });
-      return;
-    }
-
-    const affiliate = await prisma.affiliate.create({
-      data: {
-        businessId: ALPHABOOST_BUSINESS_ID,
-        code,
-        name,
-        email,
-        password: body.password || null,
-        active: true,
-      },
-    });
-
-    await prisma.affiliateProfile.create({
-      data: { affiliateId: affiliate.id, source: 'manual', status: 'active', version: 1 },
-    });
-
-    res.status(201).json({ ok: true, affiliate });
-  } catch (err) { next(err); }
-});
-
-// PATCH /api/affiliates/:code
-router.patch('/api/affiliates/:code', requireAuth, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const code = (typeof req.params.code === 'string' ? req.params.code : '').toUpperCase().trim();
-    const body = req.body as { name?: string; email?: string; affiliateCode?: string; newCode?: string; active?: boolean };
-    
-    const prisma = getPrisma();
-    const affiliate = await prisma.affiliate.findUnique({ where: { code } });
-    if (!affiliate) {
-      res.status(404).json({ error: { message: 'Affiliate not found' } });
-      return;
-    }
-
-    const newCode = (body.affiliateCode || body.newCode || code).toUpperCase().trim();
-    const updateData: Record<string, unknown> = {};
-    if (body.name) updateData.name = body.name.trim();
-    if (body.email !== undefined) updateData.email = body.email?.trim() || null;
-    if (body.active !== undefined) updateData.active = body.active;
-
-    if (newCode !== code && newCode) {
-      const existing = await prisma.affiliate.findUnique({ where: { code: newCode } });
-      if (existing) {
-        res.status(409).json({ error: { message: 'New code already exists' } });
-        return;
-      }
-      updateData.code = newCode;
-    }
-
-    const updated = await prisma.affiliate.update({ where: { code }, data: updateData });
-    res.json({ ok: true, affiliate: updated });
-  } catch (err) { next(err); }
-});
-
-// DELETE /api/affiliates/:code/hard-delete
-router.delete('/api/affiliates/:code/hard-delete', requireAuth, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const code = (typeof req.params.code === 'string' ? req.params.code : '').toUpperCase().trim();
-    const prisma = getPrisma();
-    
-    const affiliate = await prisma.affiliate.findUnique({ where: { code } });
-    if (!affiliate) {
-      res.status(404).json({ error: { message: 'Affiliate not found' } });
-      return;
-    }
-
-    // Hard delete all affiliated data
-    await prisma.affiliate.delete({ where: { code } });
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

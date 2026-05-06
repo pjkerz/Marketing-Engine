@@ -5,7 +5,7 @@ import { env } from '../../config/env';
 import { requireAuth } from '../../middleware/auth';
 import { ALPHABOOST_BUSINESS_ID } from '../../middleware/auth'; // compat only
 import { getPrisma } from '../../lib/prisma';
-import { loginLimit, pinLimit } from '../../middleware/rateLimit';
+import { loginLimit } from '../../middleware/rateLimit';
 import { verifyPassword, isBcryptHash } from '../../lib/passwordHash';
 
 const router = Router();
@@ -171,8 +171,15 @@ router.post('/api/login', loginLimit, async (req: Request, res: Response) => {
     }
   }
 
-  // REMOVED: CONSOLE_PASSWORD env var as admin override — was bypassing username check
-  // This was a security vulnerability. Removed to enforce username+password requirement.
+  // Check CONSOLE_PASSWORD env var (admin override — should be strong/random)
+  if (env.CONSOLE_PASSWORD) {
+    const isMatch = await verifyPasswordLegacy(password, env.CONSOLE_PASSWORD);
+    if (isMatch) {
+      const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
+      res.json({ ok: true, token, username, role: 'leadership' });
+      return;
+    }
+  }
 
   // Check TEAM_USER_* entries from CREDS.md (local dev fallback)
   const teamUsers = Object.entries(creds)
@@ -187,49 +194,34 @@ router.post('/api/login', loginLimit, async (req: Request, res: Response) => {
     }
   }
 
-  // REMOVED: CONSOLE_PASSWORD from CREDS.md as admin override — was a vulnerability
+  // Check CONSOLE_PASSWORD from CREDS.md (local dev fallback)
+  if (creds.CONSOLE_PASSWORD) {
+    const isMatch = await verifyPasswordLegacy(password, creds.CONSOLE_PASSWORD);
+    if (isMatch) {
+      const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
+      res.json({ ok: true, token, username, role: 'leadership' });
+      return;
+    }
+  }
 
   // Check team users stored in BusinessConfig.teamUsers (per-tenant)
   try {
     const config = await prisma.businessConfig.findUnique({ where: { businessId: adminBusinessId } });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let dbTeamUsers: any = config?.teamUsers ?? [];
-    // Safely parse if it's a string (JSON type may be stored as string)
-    if (typeof dbTeamUsers === 'string') {
-      try {
-        dbTeamUsers = JSON.parse(dbTeamUsers);
-      } catch {
-        dbTeamUsers = [];
+    const dbTeamUsers = (config?.teamUsers as Array<{ username: string; password: string }> | null) ?? [];
+    for (const u of dbTeamUsers) {
+      if (u.username === username && (await verifyPasswordLegacy(password, u.password))) {
+        const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
+        res.json({ ok: true, token, username, role: 'leadership' });
+        return;
       }
     }
-    if (Array.isArray(dbTeamUsers)) {
-      for (const u of dbTeamUsers) {
-        if (u?.username === username && u?.password && (await verifyPasswordLegacy(password, u.password))) {
-          const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
-          res.json({ ok: true, token, username, role: 'leadership' });
-          return;
-        }
-      }
-    }
-  } catch (err: unknown) {
-    // Handle P2022: missing gscTokens column (database schema out of date)
-    // This is a temporary defensive measure until Prisma migration is applied in production
-    const isSchemaError = err instanceof Error && 
-                         err.message?.includes('gscTokens') && 
-                         (err as any).code === 'P2022';
-    if (isSchemaError) {
-      console.warn('[login] database schema missing gscTokens column — team user check skipped, continuing with ADMIN_USERS');
-    } else {
-      console.error('[login] error checking team users:', err);
-    }
-  }
+  } catch { /* fall through */ }
 
   res.status(401).json({ error: 'Invalid username or password' });
 });
 
 // POST /api/admin/verify-pin — PIN gate for admin.html (no auth required, PIN is the factor)
-// SECURITY: Rate limited to 5 attempts per 5 minutes per IP to prevent brute-force
-router.post('/api/admin/verify-pin', pinLimit, (req: Request, res: Response) => {
+router.post('/api/admin/verify-pin', (req: Request, res: Response) => {
   const { pin } = req.body as { pin?: string };
   const correctPin = (process.env.ADMIN_PIN || '0404').toString().trim();
   if (pin && pin.toString().trim() === correctPin) {

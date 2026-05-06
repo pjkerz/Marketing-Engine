@@ -76,11 +76,3 @@ export const loginLimit = rateLimit({
     return `login:${username}:${req.ip}`;
   },
 });
-
-// SECURITY: PIN verification rate limiting — 5 attempts per 5 minutes per IP
-// Prevents PIN brute-force attacks on admin panel
-export const pinLimit = rateLimit({
-  max: 5,
-  windowSeconds: 300,
-  keyFn: (req) => `pin:${req.ip}`,
-});

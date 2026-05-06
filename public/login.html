@@ -84,7 +84,11 @@ async function login() {
   try {
     const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
     const d = await r.json();
-    if (!r.ok) { e.textContent = d.error || 'Login failed.'; return; }
+    if (!r.ok) { 
+      const errMsg = typeof d.error === 'object' ? (d.error?.message || d.error?.code || 'Login failed') : d.error;
+      e.textContent = errMsg || 'Login failed.'; 
+      return; 
+    }
     if (rem) { localStorage.setItem('remembered_user', u); } else { localStorage.removeItem('remembered_user'); }
     localStorage.setItem('v2_affiliate_token', d.token);
     localStorage.setItem('vc_token', d.token);

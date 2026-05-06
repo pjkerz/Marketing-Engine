@@ -176,15 +176,8 @@ router.post('/api/login', rateLimit_1.loginLimit, async (req, res) => {
             }
         }
     }
-    // Check CONSOLE_PASSWORD env var (admin override — should be strong/random)
-    if (env_1.env.CONSOLE_PASSWORD) {
-        const isMatch = await verifyPasswordLegacy(password, env_1.env.CONSOLE_PASSWORD);
-        if (isMatch) {
-            const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
-            res.json({ ok: true, token, username, role: 'leadership' });
-            return;
-        }
-    }
+    // REMOVED: CONSOLE_PASSWORD env var as admin override — was bypassing username check
+    // This was a security vulnerability. Removed to enforce username+password requirement.
     // Check TEAM_USER_* entries from CREDS.md (local dev fallback)
     const teamUsers = Object.entries(creds)
         .filter(([k]) => k.startsWith('TEAM_USER_'))
@@ -196,28 +189,34 @@ router.post('/api/login', rateLimit_1.loginLimit, async (req, res) => {
             return;
         }
     }
-    // Check CONSOLE_PASSWORD from CREDS.md (local dev fallback)
-    if (creds.CONSOLE_PASSWORD) {
-        const isMatch = await verifyPasswordLegacy(password, creds.CONSOLE_PASSWORD);
-        if (isMatch) {
-            const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
-            res.json({ ok: true, token, username, role: 'leadership' });
-            return;
-        }
-    }
+    // REMOVED: CONSOLE_PASSWORD from CREDS.md as admin override — was a vulnerability
     // Check team users stored in BusinessConfig.teamUsers (per-tenant)
     try {
         const config = await prisma.businessConfig.findUnique({ where: { businessId: adminBusinessId } });
-        const dbTeamUsers = config?.teamUsers ?? [];
-        for (const u of dbTeamUsers) {
-            if (u.username === username && (await verifyPasswordLegacy(password, u.password))) {
-                const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
-                res.json({ ok: true, token, username, role: 'leadership' });
-                return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let dbTeamUsers = config?.teamUsers ?? [];
+        // Safely parse if it's a string (JSON type may be stored as string)
+        if (typeof dbTeamUsers === 'string') {
+            try {
+                dbTeamUsers = JSON.parse(dbTeamUsers);
+            }
+            catch {
+                dbTeamUsers = [];
+            }
+        }
+        if (Array.isArray(dbTeamUsers)) {
+            for (const u of dbTeamUsers) {
+                if (u?.username === username && u?.password && (await verifyPasswordLegacy(password, u.password))) {
+                    const token = issueSessionToken({ username, role: 'admin', businessId: adminBusinessId });
+                    res.json({ ok: true, token, username, role: 'leadership' });
+                    return;
+                }
             }
         }
     }
-    catch { /* fall through */ }
+    catch (err) {
+        console.error('[login] error checking team users:', err);
+    }
     res.status(401).json({ error: 'Invalid username or password' });
 });
 // POST /api/admin/verify-pin — PIN gate for admin.html (no auth required, PIN is the factor)

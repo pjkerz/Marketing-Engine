@@ -399,7 +399,19 @@ interface TeamUser { username: string; password: string; email?: string; }
 async function getTeamUsers(businessId: string): Promise<TeamUser[]> {
   const prisma = getPrisma();
   const config = await prisma.businessConfig.findUnique({ where: { businessId } });
-  return (config?.teamUsers as TeamUser[] | null) ?? [];
+  if (!config?.teamUsers) return [];
+  
+  // Ensure teamUsers is parsed as array (in case it was stored as string)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let users: any = config.teamUsers;
+  if (typeof users === 'string') {
+    try {
+      users = JSON.parse(users);
+    } catch {
+      return [];
+    }
+  }
+  return Array.isArray(users) ? users : [];
 }
 
 async function saveTeamUsers(businessId: string, users: TeamUser[]): Promise<void> {

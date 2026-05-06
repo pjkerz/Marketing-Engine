@@ -424,7 +424,20 @@ router.get('/api/bok/download', auth_1.requireAuth, (_req, res) => {
 async function getTeamUsers(businessId) {
     const prisma = (0, prisma_1.getPrisma)();
     const config = await prisma.businessConfig.findUnique({ where: { businessId } });
-    return config?.teamUsers ?? [];
+    if (!config?.teamUsers)
+        return [];
+    // Ensure teamUsers is parsed as array (in case it was stored as string)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let users = config.teamUsers;
+    if (typeof users === 'string') {
+        try {
+            users = JSON.parse(users);
+        }
+        catch {
+            return [];
+        }
+    }
+    return Array.isArray(users) ? users : [];
 }
 async function saveTeamUsers(businessId, users) {
     const prisma = (0, prisma_1.getPrisma)();

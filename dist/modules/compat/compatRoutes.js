@@ -521,5 +521,116 @@ router.patch('/api/team/:username/password', auth_1.requireAuth, requireAdmin, a
         next(err);
     }
 });
+// ── /api/affiliates — Legacy affiliate management routes ──────────────────────
+// GET /api/affiliates
+router.get('/api/affiliates', auth_1.requireAuth, requireAdmin, async (_req, res, next) => {
+    try {
+        const prisma = (0, prisma_1.getPrisma)();
+        const affiliates = await prisma.affiliate.findMany({
+            where: { businessId: auth_2.ALPHABOOST_BUSINESS_ID },
+            orderBy: { createdAt: 'desc' },
+            select: {
+                code: true,
+                name: true,
+                email: true,
+                active: true,
+                createdAt: true,
+                profile: { orderBy: { version: 'desc' }, take: 1, select: { version: true } },
+            },
+        });
+        res.json({ ok: true, affiliates });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// POST /api/affiliates
+router.post('/api/affiliates', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+        const body = req.body;
+        const code = (body.affiliateCode || body.code || '').toUpperCase().trim();
+        const name = (body.name || '').trim();
+        const email = (body.email || '').trim();
+        if (!code || !name || !email) {
+            res.status(422).json({ error: { message: 'Code, name, and email are required' } });
+            return;
+        }
+        const prisma = (0, prisma_1.getPrisma)();
+        const existing = await prisma.affiliate.findUnique({ where: { code } });
+        if (existing) {
+            res.status(409).json({ error: { message: 'Affiliate code already exists' } });
+            return;
+        }
+        const affiliate = await prisma.affiliate.create({
+            data: {
+                businessId: auth_2.ALPHABOOST_BUSINESS_ID,
+                code,
+                name,
+                email,
+                password: body.password || null,
+                active: true,
+            },
+        });
+        await prisma.affiliateProfile.create({
+            data: { affiliateId: affiliate.id, source: 'manual', status: 'active', version: 1 },
+        });
+        res.status(201).json({ ok: true, affiliate });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// PATCH /api/affiliates/:code
+router.patch('/api/affiliates/:code', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+        const code = (typeof req.params.code === 'string' ? req.params.code : '').toUpperCase().trim();
+        const body = req.body;
+        const prisma = (0, prisma_1.getPrisma)();
+        const affiliate = await prisma.affiliate.findUnique({ where: { code } });
+        if (!affiliate) {
+            res.status(404).json({ error: { message: 'Affiliate not found' } });
+            return;
+        }
+        const newCode = (body.affiliateCode || body.newCode || code).toUpperCase().trim();
+        const updateData = {};
+        if (body.name)
+            updateData.name = body.name.trim();
+        if (body.email !== undefined)
+            updateData.email = body.email?.trim() || null;
+        if (body.active !== undefined)
+            updateData.active = body.active;
+        if (newCode !== code && newCode) {
+            const existing = await prisma.affiliate.findUnique({ where: { code: newCode } });
+            if (existing) {
+                res.status(409).json({ error: { message: 'New code already exists' } });
+                return;
+            }
+            updateData.code = newCode;
+        }
+        const updated = await prisma.affiliate.update({ where: { code }, data: updateData });
+        res.json({ ok: true, affiliate: updated });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// DELETE /api/affiliates/:code/hard-delete
+router.delete('/api/affiliates/:code/hard-delete', auth_1.requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+        const code = (typeof req.params.code === 'string' ? req.params.code : '').toUpperCase().trim();
+        const prisma = (0, prisma_1.getPrisma)();
+        const affiliate = await prisma.affiliate.findUnique({ where: { code } });
+        if (!affiliate) {
+            res.status(404).json({ error: { message: 'Affiliate not found' } });
+            return;
+        }
+        // Hard delete all affiliated data
+        await prisma.affiliate.delete({ where: { code } });
+        res.json({ ok: true });
+    }
+    catch (err) {
+        next(err);
+    }
+});
 exports.default = router;
 //# sourceMappingURL=compatRoutes.js.map

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.loginLimit = exports.trackingLimit = exports.adminLimit = exports.generalLimit = exports.generateImageLimit = exports.generateContentLimit = exports.uploadResumeLimit = void 0;
+exports.pinLimit = exports.loginLimit = exports.trackingLimit = exports.adminLimit = exports.generalLimit = exports.generateImageLimit = exports.generateContentLimit = exports.uploadResumeLimit = void 0;
 exports.rateLimit = rateLimit;
 const redis_1 = require("../lib/redis");
 const errorHandler_1 = require("./errorHandler");
@@ -65,5 +65,12 @@ exports.loginLimit = rateLimit({
         const username = req.body?.username || 'unknown';
         return `login:${username}:${req.ip}`;
     },
+});
+// SECURITY: PIN verification rate limiting — 5 attempts per 5 minutes per IP
+// Prevents PIN brute-force attacks on admin panel
+exports.pinLimit = rateLimit({
+    max: 5,
+    windowSeconds: 300,
+    keyFn: (req) => `pin:${req.ip}`,
 });
 //# sourceMappingURL=rateLimit.js.map

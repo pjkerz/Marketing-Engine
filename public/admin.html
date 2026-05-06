@@ -2548,6 +2548,10 @@ async function api(method, path, body) {
   const r = await fetch(BASE + path, opts);
   const d = await r.json();
   if (r.status === 401) { window.location.href = '/'; }
+  // Normalize error response: if d.error is an object, extract the message
+  if (d.error && typeof d.error === 'object' && d.error.message) {
+    d.error = d.error.message;
+  }
   return d;
 }
 

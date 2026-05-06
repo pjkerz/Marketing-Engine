@@ -5,7 +5,7 @@ import { env } from '../../config/env';
 import { requireAuth } from '../../middleware/auth';
 import { ALPHABOOST_BUSINESS_ID } from '../../middleware/auth'; // compat only
 import { getPrisma } from '../../lib/prisma';
-import { loginLimit } from '../../middleware/rateLimit';
+import { loginLimit, pinLimit } from '../../middleware/rateLimit';
 import { verifyPassword, isBcryptHash } from '../../lib/passwordHash';
 
 const router = Router();
@@ -221,7 +221,8 @@ router.post('/api/login', loginLimit, async (req: Request, res: Response) => {
 });
 
 // POST /api/admin/verify-pin — PIN gate for admin.html (no auth required, PIN is the factor)
-router.post('/api/admin/verify-pin', (req: Request, res: Response) => {
+// SECURITY: Rate limited to 5 attempts per 5 minutes per IP to prevent brute-force
+router.post('/api/admin/verify-pin', pinLimit, (req: Request, res: Response) => {
   const { pin } = req.body as { pin?: string };
   const correctPin = (process.env.ADMIN_PIN || '0404').toString().trim();
   if (pin && pin.toString().trim() === correctPin) {

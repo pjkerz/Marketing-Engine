@@ -221,7 +221,8 @@ router.post('/api/login', rateLimit_1.loginLimit, async (req, res) => {
     res.status(401).json({ error: 'Invalid username or password' });
 });
 // POST /api/admin/verify-pin — PIN gate for admin.html (no auth required, PIN is the factor)
-router.post('/api/admin/verify-pin', (req, res) => {
+// SECURITY: Rate limited to 5 attempts per 5 minutes per IP to prevent brute-force
+router.post('/api/admin/verify-pin', rateLimit_1.pinLimit, (req, res) => {
     const { pin } = req.body;
     const correctPin = (process.env.ADMIN_PIN || '0404').toString().trim();
     if (pin && pin.toString().trim() === correctPin) {
